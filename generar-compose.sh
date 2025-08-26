@@ -8,12 +8,12 @@ services:
   server:
   container_name: server
   image: server:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
-      - LOGGING_LEVEL=DEBUG
-    networks:
-      - testing_net
+  entrypoint: python3 /main.py
+  environment:
+    - PYTHONUNBUFFERED=1
+    - LOGGING_LEVEL=DEBUG
+  networks:
+    - testing_net
 EOL
 for i in $(seq 1 $client_number);
 do

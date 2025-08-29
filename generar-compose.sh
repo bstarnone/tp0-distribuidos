@@ -11,7 +11,7 @@ services:
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
-      - LOGGING_LEVEL=DEBUG
+      - LOGGING_LEVEL=INFO
     networks:
       - testing_net
     volumes:
@@ -27,7 +27,7 @@ cat >>$file_name <<EOL
     entrypoint: /client
     environment:
       - CLI_ID=${i}
-      - CLI_LOG_LEVEL=DEBUG
+      - CLI_LOG_LEVEL=INFO
     networks:
       - testing_net
     depends_on:

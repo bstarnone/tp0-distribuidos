@@ -9,13 +9,13 @@ services:
     container_name: server
     image: server:latest
     entrypoint: python3 /main.py
-    volumes:
-      - ./server/config.ini:/config.ini
     environment:
       - PYTHONUNBUFFERED=1
       - LOGGING_LEVEL=DEBUG
     networks:
       - testing_net
+    volumes:
+      - ./server/config.ini:/config.ini
 EOL
 for i in $(seq 1 $client_number);
 do
@@ -25,8 +25,6 @@ cat >>$file_name <<EOL
     container_name: client${i}
     image: client:latest
     entrypoint: /client
-    volumes:
-      - ./client/config.yaml:/config.yaml
     environment:
       - CLI_ID=${i}
       - CLI_LOG_LEVEL=DEBUG
@@ -34,6 +32,8 @@ cat >>$file_name <<EOL
       - testing_net
     depends_on:
       - server
+    volumes:
+      - ./client/config.yaml:/config.yaml
 EOL
 done
 

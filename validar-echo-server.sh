@@ -2,7 +2,7 @@
 RESPUESTA=$(docker run --rm --network=tp0_testing_net alpine /bin/sh -c 'echo "mensaje" | nc server 12345')
 
 if [ "$RESPUESTA" == "mensaje" ]; then
-  echo "bien"
+  echo "action: test_echo_server | result: success"
 else
-  echo "mal"
+  echo "action: test_echo_server | result: fail"
 fi

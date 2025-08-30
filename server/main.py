@@ -2,15 +2,9 @@
 
 from configparser import ConfigParser
 import signal
-import sys
 from common.server import Server
 import logging
 import os
-
-def sigterm_handler(signum=None, frame=None):
-    logging.info(f'action: shutdown | result: success')
-    sys.exit(0)
-
 
 def initialize_config():
     """ Parse env variables or config file to find program config params
@@ -54,8 +48,8 @@ def main():
                   f"listen_backlog: {listen_backlog} | logging_level: {logging_level}")
 
     # Initialize server and start server loop
-    signal.signal(signal.SIGTERM, sigterm_handler)
     server = Server(port, listen_backlog)
+    signal.signal(signal.SIGTERM, server.sigterm_handler)
     server.run()
 
 def initialize_log(logging_level):

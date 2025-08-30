@@ -1,5 +1,6 @@
 import socket
 import logging
+import sys
 
 
 class Server:
@@ -8,6 +9,22 @@ class Server:
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
+        self.client_sockets = []
+
+    def sigterm_handler(self, signum=None, frame=None):
+        self.free_resources()
+        logging.info(f'action: shutdown | result: success')
+        sys.exit(0)
+
+    def free_resources(self):
+        logging.info(f'action: close server socket | in_progress')
+        self._server_socket.close()
+        logging.info(f'action: close server socket | success')
+        logging.info(f'action: close clients sockets | in_progress')
+
+        for client_socket in self.client_sockets:
+            client_socket.close()
+        logging.info(f'action: close clients sockets | success')
 
     def run(self):
         """
@@ -22,6 +39,7 @@ class Server:
         # the server
         while True:
             client_sock = self.__accept_new_connection()
+            self.client_sockets.append(client_sock)
             self.__handle_client_connection(client_sock)
 
     def __handle_client_connection(self, client_sock):

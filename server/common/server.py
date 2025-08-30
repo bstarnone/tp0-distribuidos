@@ -1,5 +1,6 @@
 import socket
 import logging
+import struct
 import sys
 
 
@@ -50,11 +51,18 @@ class Server:
         client socket will also be closed
         """
         try:
-            # TODO: Modify the receive to avoid short-reads
-            msg = client_sock.recv(1024).rstrip().decode('utf-8')
+            raw_len = client_sock.recv(4) #TODO poner una constante
+            msg_len = struct.unpack(">I", raw_len)[0] #usa BigEndian (>I) para convertir los 4 bytes a un entero
+            msg = b""
+            while len(msg) < msg_len: #evitando short-reads
+                data_rcv = client_sock.recv(msg_len - len(msg))
+                if not data_rcv:
+                    break
+                msg += data_rcv
+            # msg = client_sock.recv(1024).rstrip().decode('utf-8')
             addr = client_sock.getpeername()
-            logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {msg}')
-            # TODO: Modify the send to avoid short-writes
+            msg_split = msg.rstrip().decode('utf-8').split(';')
+            logging.info(f'action: apuesta_almacenada | result: success | dni: {msg_split[2]} | numero: {msg_split[4]}')
             client_sock.send("{}\n".format(msg).encode('utf-8'))
         except OSError as e:
             logging.error("action: receive_message | result: fail | error: {e}")

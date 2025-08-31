@@ -47,7 +47,7 @@ func (c *Client) createClientSocket() error {
 }
 
 // StartClientLoop Send messages to the client until some time threshold is met
-func (c *Client) StartClientLoop(sigChan chan os.Signal, bet Bet) {
+func (c *Client) StartClientLoop(sigChan chan os.Signal) {
 	// There is an autoincremental msgID to identify every message sent
 	// Messages if the message amount threshold has not been surpassed
 	for msgID := 1; msgID <= 100; msgID++ {
@@ -57,6 +57,7 @@ func (c *Client) StartClientLoop(sigChan chan os.Signal, bet Bet) {
 			log.Infof("action: shutdown | result: success")
 			return
 		default:
+			bet := getBetFromCSV("/dataset.csv")
 			// Create the connection the server in every loop iteration. Send an
 			c.createClientSocket()
 

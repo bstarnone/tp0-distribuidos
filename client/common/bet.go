@@ -1,10 +1,10 @@
 package common
 
 type Bet struct {
-	AgenciaID  uint32
+	AgenciaID  string
 	Nombre     string
 	Apellido   string
-	DNI        uint32
+	DNI        string
 	Nacimiento string
-	Numero     uint32
+	Numero     string
 }

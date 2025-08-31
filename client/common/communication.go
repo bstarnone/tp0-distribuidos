@@ -20,7 +20,7 @@ type BetResponse struct {
 }
 
 func (b Bet) SerializeBet() []byte {
-	return []byte(fmt.Sprintf("%d;%s;%s;%d;%s;%d", b.AgenciaID, b.Nombre, b.Apellido, b.DNI, b.Nacimiento, b.Numero))
+	return []byte(fmt.Sprintf("%s;%s;%s;%s;%s;%s", b.AgenciaID, b.Nombre, b.Apellido, b.DNI, b.Nacimiento, b.Numero))
 }
 
 func uploadBet(connection net.Conn, bet Bet) {

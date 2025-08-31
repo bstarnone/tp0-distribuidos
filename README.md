@@ -1,3 +1,15 @@
+# Comentarios sobre la resolución
+## Ejercicio 5
+El protocolo de comunicación utilizado para este ejercicio consiste en que el emisor da a conocer al receptor la cantidad de bytes que va a mandar antes de enviarlos:
+- El emisor envía 4 bytes con la cantidad de bytes que ocupa la información codificada.
+- Luego envía la información codificada con un separador ";"
+- El receptor recibe la cantidad de bytes y luego esperar a leer los mismos desde el socket
+- Una vez recibidos los datos, los puede decodificar utilizando el separador ";".
+---
+El formato de un mensaje típico de este protocolo se ve así: <br>
+- mensaje1: `<4 bytes - largo paquete>` <br>
+- mensaje2: `<id_agencia>;<nombre>;<apellido>;<DNI>;<nacimiento>;<número apostado>` <br>
+
 # TP0: Docker + Comunicaciones + Concurrencia
 
 En el presente repositorio se provee un esqueleto básico de cliente/servidor, en donde todas las dependencias del mismo se encuentran encapsuladas en containers. Los alumnos deberán resolver una guía de ejercicios incrementales, teniendo en cuenta las condiciones de entrega descritas al final de este enunciado.
@@ -19,7 +31,7 @@ Los targets disponibles son:
 
 ### Servidor
 
-Se trata de un "echo server", en donde los mensajes recibidos por el cliente se responden inmediatamente y sin alterar. 
+Se trata de un "echo server", en donde los mensajes recibidos por el cliente se responden inmediatamente y sin alterar.
 
 Se ejecutan en bucle las siguientes etapas:
 
@@ -31,7 +43,7 @@ Se ejecutan en bucle las siguientes etapas:
 
 ### Cliente
  se conecta reiteradas veces al servidor y envía mensajes de la siguiente forma:
- 
+
 1. Cliente se conecta al servidor.
 2. Cliente genera mensaje incremental.
 3. Cliente envía mensaje al servidor y espera mensaje de respuesta.
@@ -76,7 +88,7 @@ client1 exited with code 0
 En esta primera parte del trabajo práctico se plantean una serie de ejercicios que sirven para introducir las herramientas básicas de Docker que se utilizarán a lo largo de la materia. El entendimiento de las mismas será crucial para el desarrollo de los próximos TPs.
 
 ### Ejercicio N°1:
-Definir un script de bash `generar-compose.sh` que permita crear una definición de Docker Compose con una cantidad configurable de clientes.  El nombre de los containers deberá seguir el formato propuesto: client1, client2, client3, etc. 
+Definir un script de bash `generar-compose.sh` que permita crear una definición de Docker Compose con una cantidad configurable de clientes.  El nombre de los containers deberá seguir el formato propuesto: client1, client2, client3, etc.
 
 El script deberá ubicarse en la raíz del proyecto y recibirá por parámetro el nombre del archivo de salida y la cantidad de clientes esperados:
 
@@ -135,7 +147,7 @@ Se deberá implementar un módulo de comunicación entre el cliente y el servido
 
 
 ### Ejercicio N°6:
-Modificar los clientes para que envíen varias apuestas a la vez (modalidad conocida como procesamiento por _chunks_ o _batchs_). 
+Modificar los clientes para que envíen varias apuestas a la vez (modalidad conocida como procesamiento por _chunks_ o _batchs_).
 Los _batchs_ permiten que el cliente registre varias apuestas en una misma consulta, acortando tiempos de transmisión y procesamiento.
 
 La información de cada agencia será simulada por la ingesta de su archivo numerado correspondiente, provisto por la cátedra dentro de `.data/datasets.zip`.
@@ -143,7 +155,7 @@ Los archivos deberán ser inyectados en los containers correspondientes y persis
 
 En el servidor, si todas las apuestas del *batch* fueron procesadas correctamente, imprimir por log: `action: apuesta_recibida | result: success | cantidad: ${CANTIDAD_DE_APUESTAS}`. En caso de detectar un error con alguna de las apuestas, debe responder con un código de error a elección e imprimir: `action: apuesta_recibida | result: fail | cantidad: ${CANTIDAD_DE_APUESTAS}`.
 
-La cantidad máxima de apuestas dentro de cada _batch_ debe ser configurable desde config.yaml. Respetar la clave `batch: maxAmount`, pero modificar el valor por defecto de modo tal que los paquetes no excedan los 8kB. 
+La cantidad máxima de apuestas dentro de cada _batch_ debe ser configurable desde config.yaml. Respetar la clave `batch: maxAmount`, pero modificar el valor por defecto de modo tal que los paquetes no excedan los 8kB.
 
 Por su parte, el servidor deberá responder con éxito solamente si todas las apuestas del _batch_ fueron procesadas correctamente.
 

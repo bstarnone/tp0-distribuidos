@@ -10,6 +10,10 @@ El formato de un mensaje típico de este protocolo se ve así: <br>
 - mensaje1: `<4 bytes - largo paquete>` <br>
 - mensaje2: `<id_agencia>;<nombre>;<apellido>;<DNI>;<nacimiento>;<número apostado>` <br>
 
+---
+## Ejercicio 6
+Este ejercicio pide la implementación de envío por batches.
+
 # TP0: Docker + Comunicaciones + Concurrencia
 
 En el presente repositorio se provee un esqueleto básico de cliente/servidor, en donde todas las dependencias del mismo se encuentran encapsuladas en containers. Los alumnos deberán resolver una guía de ejercicios incrementales, teniendo en cuenta las condiciones de entrega descritas al final de este enunciado.

@@ -4,12 +4,19 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"net"
+	"strings"
 )
 
 type BetMessage struct {
 	data []byte
 	len  uint32
+}
+
+type BetResponse struct {
+	DNI string
+	Num string
 }
 
 func (b Bet) SerializeBet() []byte {
@@ -39,4 +46,33 @@ func uploadBet(connection net.Conn, bet Bet) {
 		}
 		total_sent += n
 	}
+}
+
+func receiveResponse(connection net.Conn) (*BetResponse, error) {
+	lenBuf := make([]byte, 4)
+	_, err := io.ReadFull(connection, lenBuf)
+
+	if err != nil {
+		return nil, fmt.Errorf("error leyendo header: %w", err)
+	}
+
+	responseLen := binary.BigEndian.Uint32(lenBuf)
+
+	msg := make([]byte, responseLen)
+	_, err = io.ReadFull(connection, msg)
+	if err != nil {
+		return nil, fmt.Errorf("error leyendo mensaje: %w", err)
+	}
+
+	parts := strings.SplitN(string(msg), ";", 2)
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("respuesta inválida: %s", string(msg))
+	}
+
+	response := &BetResponse{
+		DNI: parts[0],
+		Num: parts[1],
+	}
+
+	return response, nil
 }

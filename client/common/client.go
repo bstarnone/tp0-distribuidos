@@ -1,7 +1,6 @@
 package common
 
 import (
-	"bufio"
 	"net"
 	"os"
 	"time"
@@ -66,8 +65,10 @@ func (c *Client) StartClientLoop(sigChan chan os.Signal, bet Bet) {
 
 			uploadBet(c.conn, bet)
 
+			response, err := receiveResponse(c.conn)
 			// TODO: Modify the send to avoid short-read
-			_, err := bufio.NewReader(c.conn).ReadString('\n')
+			// _, err := bufio.NewReader(c.conn).ReadString('\n')
+
 			c.conn.Close()
 
 			if err != nil {
@@ -79,8 +80,8 @@ func (c *Client) StartClientLoop(sigChan chan os.Signal, bet Bet) {
 			}
 
 			log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v",
-				bet.DNI,
-				bet.Numero,
+				response.DNI,
+				response.Num,
 			)
 
 			// Wait a time between sending one message and the next one

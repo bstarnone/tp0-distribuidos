@@ -12,3 +12,13 @@ def consume_socket_data(client_sock):
             break
         msg += data_rcv
     return msg
+
+
+def send_client_bet_response(client_sock, dni: str, num: str):
+    msg = f"{dni};{num}"
+    msg_bytes = msg.encode("utf-8")
+    msg_len = len(msg_bytes)
+
+    client_sock.sendall(struct.pack(">I", msg_len))
+
+    client_sock.sendall(msg_bytes)

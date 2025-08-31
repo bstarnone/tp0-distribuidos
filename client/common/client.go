@@ -19,7 +19,6 @@ type ClientConfig struct {
 type Client struct {
 	config ClientConfig
 	conn   net.Conn
-	bet    Bet
 }
 
 // NewClient Initializes a new client receiving the configuration

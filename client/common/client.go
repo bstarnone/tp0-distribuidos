@@ -3,7 +3,6 @@ package common
 import (
 	"net"
 	"os"
-	"time"
 
 	"github.com/op/go-logging"
 )
@@ -14,8 +13,6 @@ var log = logging.MustGetLogger("log")
 type ClientConfig struct {
 	ID            string
 	ServerAddress string
-	LoopAmount    int
-	LoopPeriod    time.Duration
 }
 
 // Client Entity that encapsulates how
@@ -54,7 +51,7 @@ func (c *Client) createClientSocket() error {
 func (c *Client) StartClientLoop(sigChan chan os.Signal, bet Bet) {
 	// There is an autoincremental msgID to identify every message sent
 	// Messages if the message amount threshold has not been surpassed
-	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
+	for msgID := 1; msgID <= 100; msgID++ {
 		select {
 		case <-sigChan:
 			c.conn.Close()
@@ -84,10 +81,6 @@ func (c *Client) StartClientLoop(sigChan chan os.Signal, bet Bet) {
 				response.DNI,
 				response.Num,
 			)
-
-			// Wait a time between sending one message and the next one
-			time.Sleep(c.config.LoopPeriod)
-
 		}
 	}
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)

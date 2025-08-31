@@ -64,8 +64,9 @@ func (c *Client) StartClientLoop(sigChan chan os.Signal, bet Bet) {
 			// Create the connection the server in every loop iteration. Send an
 			c.createClientSocket()
 
-			// TODO: Modify the send to avoid short-write
 			uploadBet(c.conn, bet)
+
+			// TODO: Modify the send to avoid short-read
 			_, err := bufio.NewReader(c.conn).ReadString('\n')
 			c.conn.Close()
 

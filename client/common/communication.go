@@ -12,8 +12,12 @@ type BetMessage struct {
 	len  uint32
 }
 
+func (b Bet) SerializeBet() []byte {
+	return []byte(fmt.Sprintf("%d;%s;%s;%d;%s;%d", b.AgenciaID, b.Nombre, b.Apellido, b.DNI, b.Nacimiento, b.Numero))
+}
+
 func uploadBet(connection net.Conn, bet Bet) {
-	data := bet.Serialize()
+	data := bet.SerializeBet()
 	msg := BetMessage{
 		data: data,
 		len:  uint32(len(data)),

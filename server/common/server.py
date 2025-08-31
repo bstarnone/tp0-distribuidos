@@ -3,6 +3,8 @@ import logging
 import struct
 import sys
 
+from . import communication as comms
+from . import utils
 
 class Server:
     def __init__(self, port, listen_backlog):
@@ -51,17 +53,18 @@ class Server:
         client socket will also be closed
         """
         try:
-            raw_len = client_sock.recv(4) #TODO poner una constante
-            msg_len = struct.unpack(">I", raw_len)[0] #usa BigEndian (>I) para convertir los 4 bytes a un entero
-            msg = b""
-            while len(msg) < msg_len: #evitando short-reads
-                data_rcv = client_sock.recv(msg_len - len(msg))
-                if not data_rcv:
-                    break
-                msg += data_rcv
-            # msg = client_sock.recv(1024).rstrip().decode('utf-8')
-            addr = client_sock.getpeername()
+            msg = comms.consume_socket_data(client_sock)
             msg_split = msg.rstrip().decode('utf-8').split(';')
+            print("MENSAJE ",msg_split)
+            bet = utils.Bet(
+                msg_split[0],
+                msg_split[1],
+                msg_split[2],
+                msg_split[3],
+                msg_split[4],
+                msg_split[5]
+            )
+            utils.store_bets([bet])
             logging.info(f'action: apuesta_almacenada | result: success | dni: {msg_split[2]} | numero: {msg_split[4]}')
             client_sock.send("{}\n".format(msg).encode('utf-8'))
         except OSError as e:

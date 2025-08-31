@@ -112,20 +112,21 @@ func main() {
 		LoopAmount:    v.GetInt("loop.amount"),
 		LoopPeriod:    v.GetDuration("loop.period"),
 	}
+	client := common.NewClient(clientConfig)
 
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGTERM)
+
+	bet_agenciaID, _ := strconv.ParseInt(os.Getenv("CLI_ID"), 10, 32)
 	bet_DNI, _ := strconv.ParseInt(os.Getenv("DOCUMENTO"), 10, 32)
 	bet_NUMERO, _ := strconv.ParseInt(os.Getenv("NUMERO"), 10, 32)
-
 	bet := common.Bet{
+		AgenciaID:  uint32(bet_agenciaID),
 		Nombre:     os.Getenv("NOMBRE"),
 		Apellido:   os.Getenv("APELLIDO"),
 		DNI:        uint32(bet_DNI),
 		Nacimiento: os.Getenv("NACIMIENTO"),
 		Numero:     uint32(bet_NUMERO),
 	}
-	client := common.NewClient(clientConfig)
-
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGTERM)
 	client.StartClientLoop(sigChan, bet)
 }

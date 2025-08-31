@@ -65,7 +65,7 @@ class Server:
                 msg_split[5]
             )
             utils.store_bets([bet])
-            logging.info(f'action: apuesta_almacenada | result: success | dni: {msg_split[2]} | numero: {msg_split[4]}')
+            logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
             client_sock.send("{}\n".format(msg).encode('utf-8'))
         except OSError as e:
             logging.error("action: receive_message | result: fail | error: {e}")

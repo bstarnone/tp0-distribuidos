@@ -58,6 +58,7 @@ func (c *Client) StartClientLoop(sigChan chan os.Signal) {
 	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
 		select {
 		case <-sigChan:
+			c.conn.Close()
 			log.Infof("action: shutdown | result: success")
 			return
 		default:

@@ -53,24 +53,26 @@ class Server:
         client socket will also be closed
         """
         try:
-            msg = comms.consume_socket_data(client_sock)
-            msg_split = msg.rstrip().decode('utf-8').split(';')
-            print("MENSAJE ",msg_split)
-            bet = utils.Bet(
-                msg_split[0],
-                msg_split[1],
-                msg_split[2],
-                msg_split[3],
-                msg_split[4],
-                msg_split[5]
-            )
-            utils.store_bets([bet])
-            logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
-            comms.send_client_bet_response(client_sock, bet.document, bet.number)
+            while True:
+                msg = comms.consume_socket_data(client_sock)
+                if msg == -1: #nada para consumir
+                    break
+                msg_split = msg.rstrip().decode('utf-8').split(';')
+                bet = utils.Bet(
+                    msg_split[0],
+                    msg_split[1],
+                    msg_split[2],
+                    msg_split[3],
+                    msg_split[4],
+                    msg_split[5]
+                )
+                utils.store_bets([bet])
+                logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
+                comms.send_client_bet_response(client_sock, bet.document, bet.number)
         except OSError as e:
             logging.error("action: receive_message | result: fail | error: {e}")
-        # finally:
-        #     client_sock.close()
+        finally:
+            client_sock.close()
 
     def __accept_new_connection(self):
         """

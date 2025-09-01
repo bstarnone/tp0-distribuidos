@@ -48,12 +48,15 @@ func uploadBet(connection net.Conn, bet Bet) {
 	}
 }
 
-func uploadBetsBatch(connection net.Conn, datasetPath string, batchSize int) {
-	bets := getBatchBetFromCSV("/dataset.csv", batchSize)
+func uploadBetsBatch(connection net.Conn, datasetPath string, batchSize int) int {
+	bets := getBatchBetFromCSV(datasetPath, batchSize)
+	uploaded := 0
 	for _, bet := range bets {
 		fmt.Println("[ENVIANDO BET AL SERVER]", bet)
 		uploadBet(connection, bet)
+		uploaded++
 	}
+	return uploaded
 }
 
 func receiveResponse(connection net.Conn) (*BetResponse, error) {

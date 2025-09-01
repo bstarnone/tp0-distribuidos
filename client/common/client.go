@@ -3,6 +3,7 @@ package common
 import (
 	"net"
 	"os"
+	"time"
 
 	"github.com/op/go-logging"
 )
@@ -62,26 +63,26 @@ func (c *Client) StartClientLoop(sigChan chan os.Signal) {
 
 			// bet := getBetFromCSV("/dataset.csv")
 			// uploadBet(c.conn, bet)
-			uploadBetsBatch(c.conn, "/dataset.csv", 5)
-
-			response, err := receiveResponse(c.conn)
 			// TODO: Modify the send to avoid short-read
 			// _, err := bufio.NewReader(c.conn).ReadString('\n')
+			uploaded_bets_amount := uploadBetsBatch(c.conn, "/dataset.csv", 5)
+			time.Sleep(2 * time.Second)
+			for i := 0; i < uploaded_bets_amount; i++ {
+				response, err := receiveResponse(c.conn)
+				if err != nil {
+					log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
+						c.config.ID,
+						err,
+					)
+					return
+				}
 
-			c.conn.Close()
-
-			if err != nil {
-				log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
-					c.config.ID,
-					err,
+				log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v",
+					response.DNI,
+					response.Num,
 				)
-				return
 			}
-
-			log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v",
-				response.DNI,
-				response.Num,
-			)
+			c.conn.Close()
 		}
 	}
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)

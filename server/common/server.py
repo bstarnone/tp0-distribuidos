@@ -69,8 +69,8 @@ class Server:
             comms.send_client_bet_response(client_sock, bet.document, bet.number)
         except OSError as e:
             logging.error("action: receive_message | result: fail | error: {e}")
-        finally:
-            client_sock.close()
+        # finally:
+        #     client_sock.close()
 
     def __accept_new_connection(self):
         """

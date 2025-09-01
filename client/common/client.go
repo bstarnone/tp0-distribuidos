@@ -50,18 +50,19 @@ func (c *Client) createClientSocket() error {
 func (c *Client) StartClientLoop(sigChan chan os.Signal) {
 	// There is an autoincremental msgID to identify every message sent
 	// Messages if the message amount threshold has not been surpassed
-	for msgID := 1; msgID <= 100; msgID++ {
+	for msgID := 1; msgID <= 1; msgID++ {
 		select {
 		case <-sigChan:
 			c.conn.Close()
 			log.Infof("action: shutdown | result: success")
 			return
 		default:
-			bet := getBetFromCSV("/dataset.csv")
 			// Create the connection the server in every loop iteration. Send an
 			c.createClientSocket()
 
-			uploadBet(c.conn, bet)
+			// bet := getBetFromCSV("/dataset.csv")
+			// uploadBet(c.conn, bet)
+			uploadBetsBatch(c.conn, "/dataset.csv", 5)
 
 			response, err := receiveResponse(c.conn)
 			// TODO: Modify the send to avoid short-read

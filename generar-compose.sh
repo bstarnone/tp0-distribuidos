@@ -32,7 +32,7 @@ cat >>$file_name <<EOL
       - server
     volumes:
       - ./client/config.yaml:/config.yaml
-      - ./.data/dataset/agency-${i}.csv:/dataset.csv
+      - ./.data/agency-${i}.csv:/dataset.csv
 EOL
 done
 

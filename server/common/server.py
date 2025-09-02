@@ -29,6 +29,24 @@ class Server:
             client_socket.close()
         logging.info(f'action: close clients sockets | success')
 
+    def getBetsFromBytes(self, msg):
+        raw_bets = msg.rstrip().decode('utf-8').split(',')
+        bets = []
+        for raw_bet in raw_bets:
+            # print(f"[RAW-BET] {raw_bet}")
+            parsed_bet = raw_bet.split(';')
+            # print(f"[SPLITED-BET] {parsed_bet}")
+            bet = utils.Bet(
+                parsed_bet[0],
+                parsed_bet[1],
+                parsed_bet[2],
+                parsed_bet[3],
+                parsed_bet[4],
+                parsed_bet[5]
+            )
+            bets.append(bet)
+        return bets
+
     def run(self):
         """
         Dummy Server loop
@@ -56,23 +74,27 @@ class Server:
             stored_bets=0
             while True:
                 msg = comms.consume_socket_data(client_sock)
+                # print(f"consumo del cliente: {msg}")
                 if msg == -1: #nada para consumir
                     break
-                msg_split = msg.rstrip().decode('utf-8').split(';')
-                bet = utils.Bet(
-                    msg_split[0],
-                    msg_split[1],
-                    msg_split[2],
-                    msg_split[3],
-                    msg_split[4],
-                    msg_split[5]
-                )
-                utils.store_bets([bet])
-                stored_bets +=1
+                # msg_split = msg.rstrip().decode('utf-8').split(';')
+                # bet = utils.Bet(
+                #     msg_split[0],
+                #     msg_split[1],
+                #     msg_split[2],
+                #     msg_split[3],
+                #     msg_split[4],
+                #     msg_split[5]
+                # )
+                # utils.store_bets([bet])
+                bets = self.getBetsFromBytes(msg)
+                utils.store_bets(bets)
+                stored_bets += len(bets)
                 # logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
-                comms.send_client_bet_response(client_sock, bet.document, bet.number)
+                # comms.send_client_bet_response(client_sock, bet.document, bet.number)
+                logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
         except OSError as e:
-            logging.error("action: receive_message | result: fail | error: {e}")
+            logging.error(f'action: apuesta_recibida | result: fail | cantidad: {stored_bets}')
         finally:
             logging.info(f'action: apuesta_recibida | result: success | cantidad: {stored_bets}')
             client_sock.close()

@@ -70,21 +70,20 @@ func (c *Client) StartClientLoop(sigChan chan os.Signal) {
 			batchSize, _ := strconv.ParseInt(c.config.BatchSize, 10, 32)
 			uploadBetsBatch(c.conn, "/dataset.csv", int(batchSize))
 			time.Sleep(2 * time.Second)
-
 			// for i := 0; i < uploaded_bets_amount; i++ {
-			response, err := receiveResponse(c.conn)
-			if err != nil {
-				log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
-					c.config.ID,
-					err,
-				)
-				return
-			}
+			// response, err := receiveResponse(c.conn)
+			// if err != nil {
+			// 	log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
+			// 		c.config.ID,
+			// 		err,
+			// 	)
+			// 	return
+			// }
 
-			log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v",
-				response.DNI,
-				response.Num,
-			)
+			// log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v",
+			// 	response.DNI,
+			// 	response.Num,
+			// )
 		}
 		c.conn.Close()
 		// }

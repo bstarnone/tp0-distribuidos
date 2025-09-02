@@ -73,7 +73,7 @@ func serializeBetBatch(bets []Bet) (uint16, []byte, error) {
 
 func sendBytesToConnection(connection net.Conn, bytes []byte) int {
 	totalSent := 0
-	fmt.Printf("[DEBUG] Enviando string: %q\n", string(bytes))
+	// fmt.Printf("[DEBUG] Enviando string: %q\n", string(bytes))
 	for totalSent < len(bytes) {
 		n, err := connection.Write(bytes[totalSent:])
 		if err != nil {
@@ -94,11 +94,12 @@ func uploadBetsBatch(connection net.Conn, datasetPath string, batchSize int) int
 		if finished && len(bets) == 0 {
 			break
 		}
-		totalLen, betsBytes, _ := serializeBetBatch(bets)
-		totalSent := sendBytesToConnection(connection, betsBytes)
-		if int(totalLen) != totalSent {
-			return 0
-		}
+		_, betsBytes, _ := serializeBetBatch(bets)
+		sendBytesToConnection(connection, betsBytes)
+		// if int(totalLen) != totalSent {
+		// 	fmt.Println("retorna porque sent =! len")
+		// 	return 0
+		// }
 	}
 	return uploaded
 }

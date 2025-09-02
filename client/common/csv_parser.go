@@ -2,7 +2,6 @@ package common
 
 import (
 	"encoding/csv"
-	"fmt"
 	"io"
 	"os"
 )
@@ -21,7 +20,7 @@ func getBatchBetFromCSV(csvPath string, batchSize int, reader *csv.Reader) ([]Be
 			log.Errorf("Error desconocido leyendo el csv")
 			return []Bet{}, true
 		}
-		fmt.Println("[RAW BET]", rawBet)
+		// fmt.Println("[RAW BET]", rawBet)
 		bet := Bet{
 			AgenciaID:  os.Getenv("CLI_ID"),
 			Nombre:     rawBet[0],
@@ -33,6 +32,6 @@ func getBatchBetFromCSV(csvPath string, batchSize int, reader *csv.Reader) ([]Be
 		bets = append(bets, bet)
 	}
 
-	fmt.Println("[CSV BETS Batch]", bets)
+	// fmt.Println("[CSV BETS Batch]", bets)
 	return bets, false
 }

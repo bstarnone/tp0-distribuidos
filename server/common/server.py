@@ -96,7 +96,7 @@ class Server:
         except OSError as e:
             logging.error(f'action: apuesta_recibida | result: fail | cantidad: {stored_bets}')
         finally:
-            logging.info(f'action: apuesta_recibida | result: success | cantidad: {stored_bets}')
+            # logging.info(f'action: apuesta_recibida | result: success | cantidad: {stored_bets}')
             client_sock.close()
 
     def __accept_new_connection(self):

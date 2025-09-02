@@ -21,6 +21,16 @@ Los cambios propuestos pasan a ser:
 <br>De esta manera, un mensaje podría ser:
 <br>`<N bytes>,1;Juan;Perez;4440000;1999-05-03;4444,1;Pepe;Gomez;55555000;2003-06-07,5555`
 
+### Pruebas para batchsize
+Utilizando el dataset `dataset-1.csv` provisto por la cátedra se corrieron varias veces el sistema para determinar el número óptimo de batchSize para que el programa envíe las batchs más grandes sin superar los 8kB.
+- Con 5 anduvo bien
+- Con 50 también
+- Con 500 ya no, la batch llegaba a ~23kB
+- Con 23k/8kB = 2,875 => habría que reducir en aprox 1/3 el batchSize, 500/3 =~167
+- Con 167 funciona bien
+- Con 200 la batch queda de 9kB aproximadamente
+- Finalmente, como 167 funcionó bien y es una estimación conservadora, ese va a ser el valor final propuesto.
+
 # TP0: Docker + Comunicaciones + Concurrencia
 
 En el presente repositorio se provee un esqueleto básico de cliente/servidor, en donde todas las dependencias del mismo se encuentran encapsuladas en containers. Los alumnos deberán resolver una guía de ejercicios incrementales, teniendo en cuenta las condiciones de entrega descritas al final de este enunciado.

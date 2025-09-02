@@ -61,6 +61,10 @@ func serializeBetBatch(bets []Bet) (uint16, []byte, error) {
 	}
 
 	totalLen := uint16(betsBuf.Len())
+	const maxSize = 8192
+	if totalLen > maxSize {
+		return 0, nil, fmt.Errorf("serialized bets too large: %d bytes (max %d)", totalLen, maxSize)
+	}
 
 	if err := binary.Write(&buf, binary.BigEndian, totalLen); err != nil {
 		return 0, nil, fmt.Errorf("error escribiendo length prefix: %w", err)
@@ -94,8 +98,12 @@ func uploadBetsBatch(connection net.Conn, datasetPath string, batchSize int) int
 		if finished && len(bets) == 0 {
 			break
 		}
-		_, betsBytes, _ := serializeBetBatch(bets)
+		_, betsBytes, err := serializeBetBatch(bets)
 		sendBytesToConnection(connection, betsBytes)
+		if err != nil {
+			log.Errorf("action: send batch | result: fail | error: %v", err)
+			return 0
+		}
 		// if int(totalLen) != totalSent {
 		// 	fmt.Println("retorna porque sent =! len")
 		// 	return 0

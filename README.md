@@ -12,7 +12,14 @@ El formato de un mensaje típico de este protocolo se ve así: <br>
 
 ---
 ## Ejercicio 6
-Este ejercicio pide la implementación de envío por batches.
+Este ejercicio pide la implementación de envío por batches. Dado que el envío de batches requiere la serialización de muchas apuestas juntas en un mismo mensaje, el protocolo para el ejercicio 5 se queda corto ya que solamente serializa de a una apuesta y la envía.
+Los cambios propuestos pasan a ser:
+- `<2 bytes>` para el largo del paquete total (como las batches no pueden ser mayores a 8kB, 2 bytes alcanza bien para representar la cantidad de bytes enviados)
+- `<apuesta1>,<apuesta2>,...` las apuestas se serializan de la siguiente manera, separadas por ",".
+- `<id_agencia>;<nombre>;<apellido>;<DNI>;<nacimiento>;<número apostado>` y los valores de cada apuesta se mantienen de la misma manera que el ejercicio 5.
+
+<br>De esta manera, un mensaje podría ser:
+<br>`<N bytes>,1;Juan;Perez;4440000;1999-05-03;4444,1;Pepe;Gomez;55555000;2003-06-07,5555`
 
 # TP0: Docker + Comunicaciones + Concurrencia
 

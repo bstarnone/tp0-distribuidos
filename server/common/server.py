@@ -53,6 +53,7 @@ class Server:
         client socket will also be closed
         """
         try:
+            stored_bets=0
             while True:
                 msg = comms.consume_socket_data(client_sock)
                 if msg == -1: #nada para consumir
@@ -67,11 +68,13 @@ class Server:
                     msg_split[5]
                 )
                 utils.store_bets([bet])
-                logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
+                stored_bets +=1
+                # logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
                 comms.send_client_bet_response(client_sock, bet.document, bet.number)
         except OSError as e:
             logging.error("action: receive_message | result: fail | error: {e}")
         finally:
+            logging.info(f'action: apuesta_recibida | result: success | cantidad: {stored_bets}')
             client_sock.close()
 
     def __accept_new_connection(self):

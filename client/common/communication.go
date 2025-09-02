@@ -3,9 +3,11 @@ package common
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/csv"
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"strings"
 )
 
@@ -48,13 +50,55 @@ func uploadBet(connection net.Conn, bet Bet) {
 	}
 }
 
+func serializeBetBatch(bets []Bet) (uint16, []byte, error) {
+	var buf bytes.Buffer
+	var betsBuf bytes.Buffer
+	for i, b := range bets {
+		betsBuf.Write(b.SerializeBet())
+		if i < len(bets)-1 { // no poner coma al final
+			betsBuf.WriteByte(',')
+		}
+	}
+
+	totalLen := uint16(betsBuf.Len())
+
+	if err := binary.Write(&buf, binary.BigEndian, totalLen); err != nil {
+		return 0, nil, fmt.Errorf("error escribiendo length prefix: %w", err)
+	}
+
+	buf.Write(betsBuf.Bytes())
+
+	return totalLen, buf.Bytes(), nil
+}
+
+func sendBytesToConnection(connection net.Conn, bytes []byte) int {
+	totalSent := 0
+	fmt.Printf("[DEBUG] Enviando string: %q\n", string(bytes))
+	for totalSent < len(bytes) {
+		n, err := connection.Write(bytes[totalSent:])
+		if err != nil {
+			fmt.Println("[ERROR] Error enviando bet al servidor:", err)
+			return 0
+		}
+		totalSent += n
+	}
+	return totalSent
+}
+
 func uploadBetsBatch(connection net.Conn, datasetPath string, batchSize int) int {
-	bets := getBatchBetFromCSV(datasetPath, batchSize)
+	file, _ := os.Open(datasetPath)
+	reader := csv.NewReader(file)
 	uploaded := 0
-	for _, bet := range bets {
-		fmt.Println("[ENVIANDO BET AL SERVER]", bet)
-		uploadBet(connection, bet)
-		uploaded++
+	for {
+		bets, finished := getBatchBetFromCSV(datasetPath, batchSize, reader)
+		if finished && len(bets) == 0 {
+			break
+		}
+		totalLen, betsBytes, _ := serializeBetBatch(bets)
+		totalSent := sendBytesToConnection(connection, betsBytes)
+		if int(totalLen) != totalSent {
+			return 0
+		}
 	}
 	return uploaded
 }

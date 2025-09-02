@@ -3,6 +3,7 @@ package common
 import (
 	"net"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/op/go-logging"
@@ -14,6 +15,7 @@ var log = logging.MustGetLogger("log")
 type ClientConfig struct {
 	ID            string
 	ServerAddress string
+	BatchSize     string
 }
 
 // Client Entity that encapsulates how
@@ -65,25 +67,27 @@ func (c *Client) StartClientLoop(sigChan chan os.Signal) {
 			// uploadBet(c.conn, bet)
 			// TODO: Modify the send to avoid short-read
 			// _, err := bufio.NewReader(c.conn).ReadString('\n')
-			uploaded_bets_amount := uploadBetsBatch(c.conn, "/dataset.csv", 5)
+			batchSize, _ := strconv.ParseInt(c.config.BatchSize, 10, 32)
+			uploadBetsBatch(c.conn, "/dataset.csv", int(batchSize))
 			time.Sleep(2 * time.Second)
-			for i := 0; i < uploaded_bets_amount; i++ {
-				response, err := receiveResponse(c.conn)
-				if err != nil {
-					log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
-						c.config.ID,
-						err,
-					)
-					return
-				}
 
-				log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v",
-					response.DNI,
-					response.Num,
+			// for i := 0; i < uploaded_bets_amount; i++ {
+			response, err := receiveResponse(c.conn)
+			if err != nil {
+				log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
+					c.config.ID,
+					err,
 				)
+				return
 			}
-			c.conn.Close()
+
+			log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v",
+				response.DNI,
+				response.Num,
+			)
 		}
+		c.conn.Close()
+		// }
 	}
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }

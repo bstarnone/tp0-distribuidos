@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"time"
 )
 
 type BetMessage struct {
@@ -86,8 +87,8 @@ func assembleMessage(msgType int, payload []byte) []byte {
 	copy(buf[3:], payload)
 
 	// print para análisis
-	fmt.Printf("[DEBUG] Buffer armado: %v\n", buf)
-	fmt.Printf("[DEBUG] Buffer como string: %q\n", buf)
+	// fmt.Printf("[DEBUG] Buffer armado: %v\n", buf)
+	// fmt.Printf("[DEBUG] Buffer como string: %q\n", buf)
 
 	// sleep para poder inspeccionarlo
 	// time.Sleep(5 * time.Second)
@@ -129,31 +130,51 @@ func uploadBetsBatch(connection net.Conn, datasetPath string, batchSize int) int
 	return uploaded
 }
 
-func receiveResponse(connection net.Conn) (*BetResponse, error) {
-	lenBuf := make([]byte, 4)
-	_, err := io.ReadFull(connection, lenBuf)
+func sendFin(connection net.Conn) {
+	finBytes := []byte("FIN")
+	finMsg := assembleMessage(2, finBytes)
+	sendBytesToConnection(connection, finMsg)
+}
 
+func sendWinnersRequest(connection net.Conn) {
+	winnerBytes := []byte("WINNER")
+	finMsg := assembleMessage(3, winnerBytes)
+	sendBytesToConnection(connection, finMsg)
+}
+
+func receiveWinners(connection net.Conn) (int, error) {
+	time.Sleep(5 * time.Second)
+	header := make([]byte, 3) // 1 byte tipo + 2 bytes length
+	log.Infof("Leyendo header")
+
+	_, err := io.ReadFull(connection, header)
 	if err != nil {
-		return nil, fmt.Errorf("error leyendo header: %w", err)
+		return 0, fmt.Errorf("error leyendo header: %w", err)
 	}
 
-	responseLen := binary.BigEndian.Uint32(lenBuf)
+	msgType := header[0]
+	if msgType != 3 {
+		return 0, fmt.Errorf("tipo de mensaje inesperado: %d", msgType)
+	}
 
-	msg := make([]byte, responseLen)
+	msgLen := int(header[1])<<8 | int(header[2])
+
+	// 2️⃣ Leer payload completo
+	msg := make([]byte, msgLen)
 	_, err = io.ReadFull(connection, msg)
 	if err != nil {
-		return nil, fmt.Errorf("error leyendo mensaje: %w", err)
+		return 0, fmt.Errorf("error leyendo payload: %w", err)
 	}
 
-	parts := strings.SplitN(string(msg), ";", 2)
-	if len(parts) != 2 {
-		return nil, fmt.Errorf("respuesta inválida: %s", string(msg))
-	}
+	log.Infof("Leí payload %v", msg)
 
-	response := &BetResponse{
-		DNI: parts[0],
-		Num: parts[1],
-	}
+	// 3️⃣ Parsear winners
+	payloadStr := string(msg)
+	log.Infof("Leí payload %v", payloadStr)
+	winnerStrs := strings.Split(payloadStr, ",")
+	log.Infof("Leí payload %v", winnerStrs)
 
-	return response, nil
+	log.Infof("parsie payload")
+
+	return len(winnerStrs), nil
 }

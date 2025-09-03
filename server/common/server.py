@@ -6,13 +6,23 @@ import sys
 from . import communication as comms
 from . import utils
 
+class Client:
+    def __init__(self, socket):
+        self.socket = socket
+        self.bets = []
+        self.finished = False
+        self.winners = []
+        self.asked_winners = False
+
 class Server:
     def __init__(self, port, listen_backlog):
         # Initialize server socket
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
-        self.client_sockets = []
+        # self.client_sockets = []
+        self.clients = []
+        # self.winners = []
 
     def sigterm_handler(self, signum=None, frame=None):
         self.free_resources()
@@ -25,8 +35,8 @@ class Server:
         logging.info(f'action: close server socket | success')
         logging.info(f'action: close clients sockets | in_progress')
 
-        for client_socket in self.client_sockets:
-            client_socket.close()
+        for client in self.clients:
+            client.socket.close()
         logging.info(f'action: close clients sockets | success')
 
     def getBetsFromBytes(self, msg):
@@ -60,25 +70,33 @@ class Server:
         # the server
         while True:
             client_sock = self.__accept_new_connection()
-            self.client_sockets.append(client_sock)
-            self.__handle_client_connection(client_sock)
+            client = Client(client_sock)
+            self.clients.append(client)
+            self.__handle_client_connection(client)
 
-    def handle_message(self, msg_type, payload):
-        print(f"Escuchando: {payload}")
+    def handle_message(self, client, msg_type, payload): #TODO deberia ser un mensaje de Client
+        # print(f"Escuchando: {payload}")
+
+        stored_bets=0
 
         if msg_type == 1: #batch apuestas
-            stored_bets=0
             bets = self.getBetsFromBytes(payload)
             utils.store_bets(bets)
             stored_bets += len(bets)
             logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
-            return stored_bets
         if msg_type == 2: #fin batch
+            all_bets = utils.load_bets()
+            for bet in all_bets:
+                if utils.has_won(bet):
+                    client.winners.append(bet)
             print("fin batch")
         if msg_type == 3: #pide ganador
             print("quiero el ganador")
+            print(client.winners)
+            comms.send_client_winners(client.socket, client.winners)
+        return stored_bets
 
-    def __handle_client_connection(self, client_sock):
+    def __handle_client_connection(self, client): #TODO deberia recibir todo el client
         """
         Read message from a specific client socket and closes the socket
 
@@ -88,7 +106,7 @@ class Server:
         try:
             stored_bets=0
             while True:
-                msg_type, msg = comms.consume_socket_data(client_sock)
+                msg_type, msg = comms.consume_socket_data(client.socket)
                 # print(f"consumo del cliente: {msg}")
                 if msg == -1: #nada para consumir
                     break
@@ -102,7 +120,7 @@ class Server:
                 #     msg_split[5]
                 # )
                 # utils.store_bets([bet])
-                stored_bets += self.handle_message(msg_type, msg)
+                stored_bets += self.handle_message(client, msg_type, msg)
 
                 # logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
                 # comms.send_client_bet_response(client_sock, bet.document, bet.number)
@@ -110,7 +128,7 @@ class Server:
             logging.error(f'action: apuesta_recibida | result: fail | cantidad: {stored_bets}')
         finally:
             # logging.info(f'action: apuesta_recibida | result: success | cantidad: {stored_bets}')
-            client_sock.close()
+            client.socket.close()
 
     def __accept_new_connection(self):
         """

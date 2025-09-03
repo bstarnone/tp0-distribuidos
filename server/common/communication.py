@@ -17,15 +17,21 @@ def consume_socket_data(client_sock):
     return msg_type[0], msg
 
 
-def send_client_bet_response(client_sock, dni: str, num: str):
-    msg = f"{dni};{num}"
-    msg_bytes = msg.encode("utf-8")
-    msg_len = len(msg_bytes)
-    buf = bytes([
-        (msg_len >> 8) & 0xFF,
-        msg_len & 0xFF
-    ])
+def send_client_winners(client_sock, winners):
+    parts = []
+    for w in winners:
+        parts.append(f"{w.document};{w.number}")
+
+    # unir con coma sin la última extra
+    payload_str = ",".join(parts)
+
+    payload_bytes = payload_str.encode("utf-8")
+    msg_len = len(payload_bytes)
+    len_bytes = bytes([(msg_len >> 8) & 0xFF, msg_len & 0xFF])
+
+    buf = bytearray(1 + 2 + msg_len)
+    buf[0] = 3
+    buf[1:3] = len_bytes
+    buf[3:] = payload_bytes
 
     client_sock.sendall(buf)
-    print("DEBUG-ENVIO ", msg_len, " bytes")
-    client_sock.sendall(msg_bytes)

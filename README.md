@@ -31,6 +31,16 @@ Utilizando el dataset `dataset-1.csv` provisto por la cátedra se corrieron vari
 - Con 200 la batch queda de 9kB aproximadamente
 - Finalmente, como 167 funcionó bien y es una estimación conservadora, ese va a ser el valor final propuesto.
 
+## Ejercicio 7
+Dado que se solicita soporte para recibir diferentes tipos de mensajes (batch, fin de batch y consulta de ganadores), es necesario revisar nuevamente el protocolo de comunicación.
+Simplemente se agrega un nuevo header de 1 byte para el tipo siendo, en decimal: 1 para batch, 2 para fin y 3 para consultar ganadores.
+```
++-----------+----------------+--------------------+
+| msg_type  | length_prefix  | payload            |
+| 1 byte    | 2 bytes        | N bytes            |
++-----------+----------------+--------------------+
+```
+
 # TP0: Docker + Comunicaciones + Concurrencia
 
 En el presente repositorio se provee un esqueleto básico de cliente/servidor, en donde todas las dependencias del mismo se encuentran encapsuladas en containers. Los alumnos deberán resolver una guía de ejercicios incrementales, teniendo en cuenta las condiciones de entrega descritas al final de este enunciado.

@@ -55,7 +55,7 @@ func serializeBetBatch(bets []Bet) (uint16, []byte, error) {
 	var betsBuf bytes.Buffer
 	for i, b := range bets {
 		betsBuf.Write(b.SerializeBet())
-		if i < len(bets)-1 { // no poner coma al final
+		if i < len(bets)-1 {
 			betsBuf.WriteByte(',')
 		}
 	}
@@ -66,19 +66,39 @@ func serializeBetBatch(bets []Bet) (uint16, []byte, error) {
 		return 0, nil, fmt.Errorf("serialized bets too large: %d bytes (max %d)", totalLen, maxSize)
 	}
 
-	if err := binary.Write(&buf, binary.BigEndian, totalLen); err != nil {
-		return 0, nil, fmt.Errorf("error escribiendo length prefix: %w", err)
-	}
+	// if err := binary.Write(&buf, binary.BigEndian, totalLen); err != nil {
+	// 	return 0, nil, fmt.Errorf("error escribiendo length prefix: %w", err)
+	// }
 
 	buf.Write(betsBuf.Bytes())
 
 	return totalLen, buf.Bytes(), nil
 }
 
+// Esta función agrega al payload el type header y el length prefix
+func assembleMessage(msgType int, payload []byte) []byte {
+	payloadLen := len(payload)
+
+	buf := make([]byte, 1+2+payloadLen)
+	buf[0] = byte(msgType)
+	buf[1] = byte(payloadLen >> 8) // high
+	buf[2] = byte(payloadLen)      // low
+	copy(buf[3:], payload)
+
+	// print para análisis
+	fmt.Printf("[DEBUG] Buffer armado: %v\n", buf)
+	fmt.Printf("[DEBUG] Buffer como string: %q\n", buf)
+
+	// sleep para poder inspeccionarlo
+	// time.Sleep(5 * time.Second)
+
+	return buf
+}
+
 func sendBytesToConnection(connection net.Conn, bytes []byte) int {
 	totalSent := 0
-	// fmt.Printf("[DEBUG] Enviando string: %q\n", string(bytes))
 	for totalSent < len(bytes) {
+		// fmt.Printf("[DEBUG] Enviando: %q\n", string(bytes[totalSent:]))
 		n, err := connection.Write(bytes[totalSent:])
 		if err != nil {
 			fmt.Println("[ERROR] Error enviando bet al servidor:", err)
@@ -99,15 +119,12 @@ func uploadBetsBatch(connection net.Conn, datasetPath string, batchSize int) int
 			break
 		}
 		_, betsBytes, err := serializeBetBatch(bets)
-		sendBytesToConnection(connection, betsBytes)
+		fullMessage := assembleMessage(1, betsBytes)
+		sendBytesToConnection(connection, fullMessage)
 		if err != nil {
 			log.Errorf("action: send batch | result: fail | error: %v", err)
 			return 0
 		}
-		// if int(totalLen) != totalSent {
-		// 	fmt.Println("retorna porque sent =! len")
-		// 	return 0
-		// }
 	}
 	return uploaded
 }

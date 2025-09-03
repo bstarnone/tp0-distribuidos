@@ -63,6 +63,21 @@ class Server:
             self.client_sockets.append(client_sock)
             self.__handle_client_connection(client_sock)
 
+    def handle_message(self, msg_type, payload):
+        print(f"Escuchando: {payload}")
+
+        if msg_type == 1: #batch apuestas
+            stored_bets=0
+            bets = self.getBetsFromBytes(payload)
+            utils.store_bets(bets)
+            stored_bets += len(bets)
+            logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
+            return stored_bets
+        if msg_type == 2: #fin batch
+            print("fin batch")
+        if msg_type == 3: #pide ganador
+            print("quiero el ganador")
+
     def __handle_client_connection(self, client_sock):
         """
         Read message from a specific client socket and closes the socket
@@ -73,7 +88,7 @@ class Server:
         try:
             stored_bets=0
             while True:
-                msg = comms.consume_socket_data(client_sock)
+                msg_type, msg = comms.consume_socket_data(client_sock)
                 # print(f"consumo del cliente: {msg}")
                 if msg == -1: #nada para consumir
                     break
@@ -87,12 +102,10 @@ class Server:
                 #     msg_split[5]
                 # )
                 # utils.store_bets([bet])
-                bets = self.getBetsFromBytes(msg)
-                utils.store_bets(bets)
-                stored_bets += len(bets)
+                stored_bets += self.handle_message(msg_type, msg)
+
                 # logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
                 # comms.send_client_bet_response(client_sock, bet.document, bet.number)
-                logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
         except OSError as e:
             logging.error(f'action: apuesta_recibida | result: fail | cantidad: {stored_bets}')
         finally:

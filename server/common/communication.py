@@ -2,10 +2,11 @@ import struct
 
 
 def consume_socket_data(client_sock):
+    msg_type = client_sock.recv(1)
     raw_len = client_sock.recv(2) #TODO poner una constante
-    # print(f"leo raw len {raw_len}")
+    print(f"leo raw len {raw_len}")
     if not raw_len:
-        return -1
+        return -1, -1
     msg_len = (raw_len[0] << 8) | raw_len[1]
     msg = b""
     while len(msg) < msg_len: #evitando short-reads
@@ -13,7 +14,7 @@ def consume_socket_data(client_sock):
         if not data_rcv:
             break
         msg += data_rcv
-    return msg
+    return msg_type[0], msg
 
 
 def send_client_bet_response(client_sock, dni: str, num: str):

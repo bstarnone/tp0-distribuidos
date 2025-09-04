@@ -41,6 +41,8 @@ Simplemente se agrega un nuevo header de 1 byte para el tipo siendo, en decimal:
 +-----------+----------------+--------------------+
 ```
 
+Se actualizó el programa para que el servidor reciba todas las apuestas, espere a que cada cliente le envíe el pedido de ganadores y ahí los envía analizando el archivo y enviando solamente a los que corresponde. Cada cliente envía la solicitud de ganadores y se queda esperando por una respuesta hasta que el servidor la envía.
+
 # TP0: Docker + Comunicaciones + Concurrencia
 
 En el presente repositorio se provee un esqueleto básico de cliente/servidor, en donde todas las dependencias del mismo se encuentran encapsuladas en containers. Los alumnos deberán resolver una guía de ejercicios incrementales, teniendo en cuenta las condiciones de entrega descritas al final de este enunciado.

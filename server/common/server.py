@@ -2,6 +2,7 @@ import socket
 import logging
 import sys
 import threading
+import time
 
 from . import communication as comms
 from . import utils
@@ -27,8 +28,11 @@ class Server:
         self.lock = threading.Lock()
         self.threads = []
         self.barrier = threading.Barrier(expected_agencies)
+        self.still_alive = True
+        self.cleaner_thread = threading.Thread()
 
     def sigterm_handler(self, signum=None, frame=None):
+        self.still_alive = False
         self.free_resources()
         logging.info(f'action: shutdown | result: success')
         sys.exit(0)
@@ -40,6 +44,8 @@ class Server:
         logging.info(f'action: close clients sockets | in_progress')
         for t in self.threads:
             t.join()
+
+        self.cleaner_thread.join()
 
         for client in self.clients:
             client.socket.close()
@@ -63,16 +69,12 @@ class Server:
         return bets, bets[0].agency
 
     def run(self):
-        """
-        Dummy Server loop
+        t = threading.Thread( #thread para joinear los que terminen y liberar recursos
+            target=self.check_joinable_threads,
+        )
+        t.start()
+        self.cleaner_thread = t
 
-        Server that accept a new connections and establishes a
-        communication with a client. After client with communucation
-        finishes, servers starts to accept new connections again
-        """
-
-        # TODO: Modify this program to handle signal to graceful shutdown
-        # the server
         while True:
             client_sock = self.__accept_new_connection()
             client = Client(client_sock)
@@ -84,7 +86,20 @@ class Server:
                 args=(client,),
             )
             t.start()
-            self.threads.append(t)
+            with self.lock:
+                self.threads.append(t)
+
+    def check_joinable_threads(self):
+        while True:
+            time.sleep(0.5)
+            with self.lock:
+                alive_threads_copy = self.threads[:]
+                for t in alive_threads_copy:
+                    if not t.is_alive():
+                        print("cerrado porque terminó")
+                        t.join()
+                        self.threads.remove(t)
+
 
     def handle_message(self, client, msg_type, payload): #TODO deberia ser un mensaje de Client
         stored_bets=0
@@ -118,8 +133,11 @@ class Server:
         client socket will also be closed
         """
         try:
+            print("por lo menos entro aca")
             stored_bets=0
             while True:
+                if(self.still_alive == False):
+                   return
                 msg_type, msg = comms.consume_socket_data(client.socket)
 
                 if msg == -1: #nada para consumir

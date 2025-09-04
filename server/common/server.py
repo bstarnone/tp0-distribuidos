@@ -97,12 +97,8 @@ class Server:
             stored_bets += len(bets)
         if msg_type == 2: #fin batch
             client.finished = True
-            print("fin batch")
         if msg_type == 3: #pide ganador
-            print("quiero el ganador")
             client.asked_winners = True
-            # print(client.winners)
-            # comms.send_client_winners(client.socket, client.winners)
             self.winners_response_queue.append(client)
         return stored_bets
 

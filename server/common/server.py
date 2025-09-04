@@ -9,6 +9,7 @@ from . import utils
 class Client:
     def __init__(self, socket):
         self.socket = socket
+        self.agency_id = 0
         self.bets = []
         self.finished = False
         self.winners = []
@@ -57,7 +58,8 @@ class Server:
                 parsed_bet[5]
             )
             bets.append(bet)
-        return bets
+
+        return bets, bets[0].agency
 
     def run(self):
         """
@@ -82,15 +84,12 @@ class Server:
         stored_bets=0
 
         if msg_type == 1: #batch apuestas
-            bets = self.getBetsFromBytes(payload)
+            bets, agency_id = self.getBetsFromBytes(payload)
+            client.agency_id = agency_id
             utils.store_bets(bets)
             stored_bets += len(bets)
             # logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
         if msg_type == 2: #fin batch
-            all_bets = utils.load_bets()
-            for bet in all_bets:
-                if utils.has_won(bet):
-                    client.winners.append(bet)
             client.finished = True
             print("fin batch")
         if msg_type == 3: #pide ganador
@@ -100,6 +99,15 @@ class Server:
             # comms.send_client_winners(client.socket, client.winners)
             self.winners_response_queue.append(client)
         return stored_bets
+
+    def find_every_winner(self):
+        all_bets = utils.load_bets()
+        for bet in all_bets:
+            if utils.has_won(bet):
+                for c in self.clients:
+                    if bet.agency == c.agency_id:
+                        print(f"cliente {c.agency_id} suma ganador {bet.document}")
+                        c.winners.append(bet)
 
     def __handle_client_connection(self, client): #TODO deberia recibir todo el client
         """
@@ -127,7 +135,9 @@ class Server:
                 # utils.store_bets([bet])
                 stored_bets += self.handle_message(client, msg_type, msg)
                 if len(self.winners_response_queue) == self.expected_agencies:
+                    self.find_every_winner()
                     for c in self.clients:
+                        # logging.info(f'este cliente tiene {len(c.winners)}')
                         comms.send_client_winners(c.socket, c.winners)
                         c.socket.close()
                         # logging.info(f'action: cierro conexion de cliente con sus winners {client.winners}')

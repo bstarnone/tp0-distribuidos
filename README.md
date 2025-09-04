@@ -1,4 +1,86 @@
 # Comentarios sobre la resolución
+## Ejercicio 1
+Para este ejercicio se realizó un script `generar_compose.sh` únicamente con bash ya que se considera que es suficiente para lo solicitado.
+El script toma como variables de entrada el nombre del archivo de salida y la cantidad de clientes a generar.
+Internamente abre el archivo, escribe la parte del servidor, realiza un loop generando la parte para los clientes en función de cuántos clientes hayan y finalmente escribe la parte de la red. El modelo utilizado fue el `docker-compose-dev.yaml` provisto en el repositorio base.
+Este script fue evolucionando entre los ejercicios, así que pueden existir diferencias entre las distintas ramas.
+
+Puede invocarse mediante: `bash generar_compose.sh <output_file_name> <#clients>`
+
+Ejemplo: `bash generar_compose.sh docker_compose_dev.yml 5`
+
+## Ejercicio 2
+Este ejercicio pide que se pueda configurar de manera dinámica y externa a los containers su configuración (es decir, `config.ini` para el server y `config.yaml` para los clientes). Esto se logra usando *docker volumes* y agregandolos al compose del ejercicio anterior.
+Analizando los dockerfiles de cada aplicación, se determinó que los archivos viven en el root del contenedor, dado que allí se copian inicialmente.
+Entonces se agregan al compose modificando el script:
+- Para el cliente:
+```
+volumes:
+  - ./client/config.yaml:/config.yaml
+```
+
+- Para el servidor:
+```
+volumes:
+  - ./server/config.ini:/config.ini
+```
+
+## Ejercicio 3
+Este ejercicio pide constatar si el servidor está levantado utilizando `netcat`, con la particularidad que el comando no debe correrse desde el host que lo ejecuta.
+Por esta limitación, el script lo corre usando una imagen docker:
+```
+docker run --rm --network=tp0_testing_net alpine /bin/sh -c 'echo "mensaje" | nc server 12345'
+```
+El comando en cuestión levanta una imagen de `alpine`, que se verificó previamente que venga con `netcat` listo para su uso.
+Se lo corre conectandolo a la red interna de docker que se crea en el script `generar_compose.sh` y se le pasa el comando que utiliza `netcat` para que pueda ejecutar la verificación.
+El script luego captura la respuesta y verifica si el mensaje coincide con lo enviado, imprimiendo el mensaje correspondiente.
+
+## Ejercicio 4
+Este ejercicio pide implementar un *graceful shutdown* cuando las aplicaciones reciben la señal SIGTERM.
+La flag `-t`, utilizada en el make file para matar los contenedores, indica cuánto tiempo (en segundos) se le da a los contenedores para cerrarse desde que se envía SIGTERM. Pasado ese tiempo, envía SIGKILL.
+Para implementar el manejo de señales, en el servidor se utilizó el módulo `signal`:
+```python
+    signal.signal(signal.SIGTERM, server.sigterm_handler)
+```
+Esta función recibe la señal que debe manejar y la función para manejarla. La función se define dentro de `server.py` como:
+```python
+    def sigterm_handler(self, signum=None, frame=None):
+        self.free_resources()
+        logging.info(f'action: shutdown | result: success')
+        sys.exit(0)
+
+    def free_resources(self):
+        logging.info(f'action: close server socket | in_progress')
+        self._server_socket.close()
+        logging.info(f'action: close server socket | success')
+        logging.info(f'action: close clients sockets | in_progress')
+
+        for client_socket in self.client_sockets:
+            client_socket.close()
+        logging.info(f'action: close clients sockets | success')
+
+```
+Y se encarga de asegurarse que todos los sockets abiertos para la comunicación se cierren a fin de evitar que queden *file descriptors* sueltos.
+
+Para el cliente la cuestión es análoga pero utilizando *channels* de Go.
+```go
+  sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGTERM)
+```
+En este caso, esta implementación no provee de un handler, sino que se revisa dentro del loop del cliente.
+```go
+func (c *Client) StartClientLoop(sigChan chan os.Signal) {
+	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
+		select {
+		case <-sigChan:
+			c.conn.Close()
+			log.Infof("action: shutdown | result: success")
+			return
+		default:
+    ///...
+```
+Y si la señal se dispara, la conexión con el servidor se cierra.
+
 ## Ejercicio 5
 El protocolo de comunicación utilizado para este ejercicio consiste en que el emisor da a conocer al receptor la cantidad de bytes que va a mandar antes de enviarlos:
 - El emisor envía 4 bytes con la cantidad de bytes que ocupa la información codificada.
@@ -11,6 +93,32 @@ El formato de un mensaje típico de este protocolo se ve así: <br>
 - mensaje2: `<id_agencia>;<nombre>;<apellido>;<DNI>;<nacimiento>;<número apostado>` <br>
 
 ---
+Para manejar los short-reads y short-writes la idea general, compartida a lo largo del proyecto, es la de contar cuántos bytes se envían y compararlos con la cantidad de bytes que se quieren enviar.
+
+En el cliente se implementó así la escritura evitando short-writes:
+```go
+	for total_sent < len(full_msg) {
+		n, err := connection.Write(full_msg[total_sent:])
+		if err != nil {
+			fmt.Println("[ERROR] Error enviando bet al servidor:", err)
+			return
+		}
+		total_sent += n
+	}
+}
+```
+
+Y análogamente en el servidor se implementa la lectura evitando short-reads:
+```python
+   msg = b""
+
+  while len(msg) < msg_len: #evitando short-reads
+        data_rcv = client_sock.recv(msg_len - len(msg))
+        if not data_rcv:
+            break
+        msg += data_rcv
+  return msg
+```
 ## Ejercicio 6
 Este ejercicio pide la implementación de envío por batches. Dado que el envío de batches requiere la serialización de muchas apuestas juntas en un mismo mensaje, el protocolo para el ejercicio 5 se queda corto ya que solamente serializa de a una apuesta y la envía.
 Los cambios propuestos pasan a ser:

@@ -138,7 +138,8 @@ class Server:
                     self.find_every_winner()
                     for c in self.clients:
                         # logging.info(f'este cliente tiene {len(c.winners)}')
-                        comms.send_client_winners(c.socket, c.winners)
+                        if len(c.winners) > 0:
+                            comms.send_client_winners(c.socket, c.winners)
                         c.socket.close()
                         # logging.info(f'action: cierro conexion de cliente con sus winners {client.winners}')
                     break

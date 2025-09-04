@@ -8,7 +8,6 @@ import (
 	"net"
 	"os"
 	"strings"
-	"time"
 )
 
 type BetResponse struct {
@@ -99,7 +98,7 @@ func sendWinnersRequest(connection net.Conn) {
 }
 
 func receiveWinners(connection net.Conn) (int, error) {
-	time.Sleep(5 * time.Second)
+	// time.Sleep(5 * time.Second)
 	header := make([]byte, 3) // 1 byte tipo + 2 bytes length
 
 	_, err := io.ReadFull(connection, header)

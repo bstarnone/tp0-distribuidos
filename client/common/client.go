@@ -4,7 +4,6 @@ import (
 	"net"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/op/go-logging"
 )
@@ -51,28 +50,24 @@ func (c *Client) createClientSocket() error {
 
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop(sigChan chan os.Signal) {
-	// There is an autoincremental msgID to identify every message sent
-	// Messages if the message amount threshold has not been surpassed
-	for msgID := 1; msgID <= 1; msgID++ {
-		select {
-		case <-sigChan:
-			c.conn.Close()
-			log.Infof("action: shutdown | result: success")
-			return
-		default:
-			// Create the connection the server in every loop iteration. Send an
-			c.createClientSocket()
-			time.Sleep(5 * time.Second)
-			batchSize, _ := strconv.ParseInt(c.config.BatchSize, 10, 32)
-			uploadBetsBatch(c.conn, "/dataset.csv", int(batchSize))
-			sendFin(c.conn)
-			time.Sleep(2 * time.Second)
-			sendWinnersRequest(c.conn)
-			response, _ := receiveWinners(c.conn)
-
-			log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v", response)
-		}
+	select {
+	case <-sigChan:
 		c.conn.Close()
+		log.Infof("action: shutdown | result: success")
+		return
+	default:
+		// Create the connection the server in every loop iteration. Send an
+		c.createClientSocket()
+		// time.Sleep(5 * time.Second)
+		batchSize, _ := strconv.ParseInt(c.config.BatchSize, 10, 32)
+		uploadBetsBatch(c.conn, "/dataset.csv", int(batchSize))
+		sendFin(c.conn)
+		// time.Sleep(2 * time.Second)
+		sendWinnersRequest(c.conn)
+		response, _ := receiveWinners(c.conn)
+
+		log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v", response)
 	}
+	c.conn.Close()
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }

@@ -2,6 +2,7 @@ import socket
 import logging
 import struct
 import sys
+import threading
 
 from . import communication as comms
 from . import utils
@@ -26,6 +27,9 @@ class Server:
         self.clients = []
         # self.winners = []
         self.winners_response_queue = []
+        self.lock = threading.Lock()
+        self.threads = []
+        self.barrier = threading.Barrier(expected_agencies)
 
     def sigterm_handler(self, signum=None, frame=None):
         self.free_resources()
@@ -37,6 +41,8 @@ class Server:
         self._server_socket.close()
         logging.info(f'action: close server socket | success')
         logging.info(f'action: close clients sockets | in_progress')
+        for t in self.threads:
+            t.join()
 
         for client in self.clients:
             client.socket.close()
@@ -75,8 +81,17 @@ class Server:
         while True:
             client_sock = self.__accept_new_connection()
             client = Client(client_sock)
-            self.clients.append(client)
-            self.__handle_client_connection(client)
+            with self.lock:
+                self.clients.append(client)
+
+            t = threading.Thread(
+                target=self.__handle_client_connection,
+                args=(client,),
+            )
+            t.start()
+            self.threads.append(t)
+
+            # self.__handle_client_connection(client)
 
     def handle_message(self, client, msg_type, payload): #TODO deberia ser un mensaje de Client
         # print(f"Escuchando: {payload}")
@@ -86,7 +101,8 @@ class Server:
         if msg_type == 1: #batch apuestas
             bets, agency_id = self.getBetsFromBytes(payload)
             client.agency_id = agency_id
-            utils.store_bets(bets)
+            with self.lock:
+                utils.store_bets(bets)
             stored_bets += len(bets)
             # logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
         if msg_type == 2: #fin batch
@@ -100,14 +116,14 @@ class Server:
             self.winners_response_queue.append(client)
         return stored_bets
 
-    def find_every_winner(self):
-        all_bets = utils.load_bets()
-        for bet in all_bets:
-            if utils.has_won(bet):
-                for c in self.clients:
-                    if bet.agency == c.agency_id:
-                        print(f"cliente {c.agency_id} suma ganador {bet.document}")
-                        c.winners.append(bet)
+    def find_every_winner(self, client):
+        with self.lock:
+            all_bets = utils.load_bets()
+            for bet in all_bets:
+                if utils.has_won(bet):
+                    if bet.agency == client.agency_id:
+                            print(f"cliente {client.agency_id} suma ganador {bet.document}")
+                            client.winners.append(bet)
 
     def __handle_client_connection(self, client): #TODO deberia recibir todo el client
         """
@@ -120,38 +136,34 @@ class Server:
             stored_bets=0
             while True:
                 msg_type, msg = comms.consume_socket_data(client.socket)
-                # print(f"consumo del cliente: {msg}")
+
                 if msg == -1: #nada para consumir
                     break
-                # msg_split = msg.rstrip().decode('utf-8').split(';')
-                # bet = utils.Bet(
-                #     msg_split[0],
-                #     msg_split[1],
-                #     msg_split[2],
-                #     msg_split[3],
-                #     msg_split[4],
-                #     msg_split[5]
-                # )
-                # utils.store_bets([bet])
+
                 stored_bets += self.handle_message(client, msg_type, msg)
-                if len(self.winners_response_queue) == self.expected_agencies:
-                    self.find_every_winner()
-                    for c in self.clients:
-                        # logging.info(f'este cliente tiene {len(c.winners)}')
-                        if len(c.winners) > 0:
-                            comms.send_client_winners(c.socket, c.winners)
-                        c.socket.close()
-                        # logging.info(f'action: cierro conexion de cliente con sus winners {client.winners}')
+
+                # if len(self.winners_response_queue) == self.expected_agencies:
+                #     self.find_every_winner()
+                #     for c in self.clients:
+                #         if len(c.winners) > 0:
+                #             comms.send_client_winners(c.socket, c.winners)
+                #         c.socket.close()
+                #     break
+                if client.finished & client.asked_winners:
                     break
-                elif client.finished & client.asked_winners:
-                    break
-                # logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
-                # comms.send_client_bet_response(client_sock, bet.document, bet.number)
         except OSError as e:
             logging.error(f'action: apuesta_recibida | result: fail | cantidad: {stored_bets} {e}')
         finally:
             logging.info(f'action: apuesta_recibida | result: success | cantidad: {stored_bets}')
-            # client.socket.close()
+            print(f"Llego a la barrier")
+            self.barrier.wait()
+            print(f"Pasé la barrier")
+
+        if len(self.winners_response_queue) == self.expected_agencies:
+            self.find_every_winner(client)
+            if len(client.winners) > 0:
+                comms.send_client_winners(client.socket, client.winners)
+            client.socket.close()
 
     def __accept_new_connection(self):
         """

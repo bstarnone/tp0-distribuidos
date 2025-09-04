@@ -62,7 +62,7 @@ func (c *Client) StartClientLoop(sigChan chan os.Signal) {
 		default:
 			// Create the connection the server in every loop iteration. Send an
 			c.createClientSocket()
-
+			time.Sleep(5 * time.Second)
 			// bet := getBetFromCSV("/dataset.csv")
 			// uploadBet(c.conn, bet)
 			// TODO: Modify the send to avoid short-read

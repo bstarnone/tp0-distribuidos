@@ -43,6 +43,9 @@ Simplemente se agrega un nuevo header de 1 byte para el tipo siendo, en decimal:
 
 Se actualizó el programa para que el servidor reciba todas las apuestas, espere a que cada cliente le envíe el pedido de ganadores y ahí los envía analizando el archivo y enviando solamente a los que corresponde. Cada cliente envía la solicitud de ganadores y se queda esperando por una respuesta hasta que el servidor la envía.
 
+## Ejercicio 8
+Para la concurrencia se optó por el uso de *multithreading*. La justificación se resume en que, según la documentación oficial, el uso de GIL para la exclusión mutua sobre recursos no aprovecha los sistemas multiprocesador. Igualmente la tarea solicitada es intensiva en operaciones I/O, escritura y lectura de archivos. Es por esto que el uso de GIL no significa un cuello de botella para la aplicación.
+
 # TP0: Docker + Comunicaciones + Concurrencia
 
 En el presente repositorio se provee un esqueleto básico de cliente/servidor, en donde todas las dependencias del mismo se encuentran encapsuladas en containers. Los alumnos deberán resolver una guía de ejercicios incrementales, teniendo en cuenta las condiciones de entrega descritas al final de este enunciado.

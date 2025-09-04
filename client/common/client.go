@@ -63,28 +63,16 @@ func (c *Client) StartClientLoop(sigChan chan os.Signal) {
 			// Create the connection the server in every loop iteration. Send an
 			c.createClientSocket()
 			time.Sleep(5 * time.Second)
-			// bet := getBetFromCSV("/dataset.csv")
-			// uploadBet(c.conn, bet)
-			// TODO: Modify the send to avoid short-read
 			batchSize, _ := strconv.ParseInt(c.config.BatchSize, 10, 32)
 			uploadBetsBatch(c.conn, "/dataset.csv", int(batchSize))
 			sendFin(c.conn)
 			time.Sleep(2 * time.Second)
 			sendWinnersRequest(c.conn)
-			// for i := 0; i < uploaded_bets_amount; i++ {
 			response, _ := receiveWinners(c.conn)
-			// if err != nil {
-			// 	log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
-			// 		c.config.ID,
-			// 		err,
-			// 	)
-			// 	return
-			// }
 
 			log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v", response)
 		}
 		c.conn.Close()
-		// }
 	}
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }

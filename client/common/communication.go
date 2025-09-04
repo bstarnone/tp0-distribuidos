@@ -11,11 +11,6 @@ import (
 	"time"
 )
 
-// type BetMessage struct {
-// 	data []byte
-// 	len  uint32
-// }
-
 type BetResponse struct {
 	DNI string
 	Num string
@@ -24,31 +19,6 @@ type BetResponse struct {
 func (b Bet) SerializeBet() []byte {
 	return []byte(fmt.Sprintf("%s;%s;%s;%s;%s;%s", b.AgenciaID, b.Nombre, b.Apellido, b.DNI, b.Nacimiento, b.Numero))
 }
-
-// func uploadBet(connection net.Conn, bet Bet) {
-// 	data := bet.SerializeBet()
-// 	msg := BetMessage{
-// 		data: data,
-// 		len:  uint32(len(data)),
-// 	}
-// 	// TODO: cambiar la lógica para recibir un BetMessage en vez de un Bet
-
-// 	msg_buf := new(bytes.Buffer)
-// 	binary.Write(msg_buf, binary.BigEndian, msg.len)
-// 	msg_buf.Write(msg.data)
-
-// 	full_msg := msg_buf.Bytes()
-// 	total_sent := 0
-
-// 	for total_sent < len(full_msg) {
-// 		n, err := connection.Write(full_msg[total_sent:])
-// 		if err != nil {
-// 			// fmt.Println("[ERROR] Error enviando bet al servidor:", err)
-// 			return
-// 		}
-// 		total_sent += n
-// 	}
-// }
 
 func serializeBetBatch(bets []Bet) (uint16, []byte, error) {
 	var buf bytes.Buffer
@@ -66,10 +36,6 @@ func serializeBetBatch(bets []Bet) (uint16, []byte, error) {
 		return 0, nil, fmt.Errorf("serialized bets too large: %d bytes (max %d)", totalLen, maxSize)
 	}
 
-	// if err := binary.Write(&buf, binary.BigEndian, totalLen); err != nil {
-	// 	return 0, nil, fmt.Errorf("error escribiendo length prefix: %w", err)
-	// }
-
 	buf.Write(betsBuf.Bytes())
 
 	return totalLen, buf.Bytes(), nil
@@ -85,23 +51,14 @@ func assembleMessage(msgType int, payload []byte) []byte {
 	buf[2] = byte(payloadLen)      // low
 	copy(buf[3:], payload)
 
-	// print para análisis
-	// fmt.Printf("[DEBUG] Buffer armado: %v\n", buf)
-	// fmt.Printf("[DEBUG] Buffer como string: %q\n", buf)
-
-	// sleep para poder inspeccionarlo
-	// time.Sleep(5 * time.Second)
-
 	return buf
 }
 
 func sendBytesToConnection(connection net.Conn, bytes []byte) int {
 	totalSent := 0
 	for totalSent < len(bytes) {
-		// fmt.Printf("[DEBUG] Enviando: %q\n", string(bytes[totalSent:]))
 		n, err := connection.Write(bytes[totalSent:])
 		if err != nil {
-			// fmt.Println("[ERROR] Error enviando bet al servidor:", err)
 			return 0
 		}
 		totalSent += n
@@ -114,7 +71,7 @@ func uploadBetsBatch(connection net.Conn, datasetPath string, batchSize int) int
 	reader := csv.NewReader(file)
 	uploaded := 0
 	for {
-		bets, finished := getBatchBetFromCSV(datasetPath, batchSize, reader)
+		bets, finished := getBatchBetFromCSV(batchSize, reader)
 		if finished && len(bets) == 0 {
 			break
 		}

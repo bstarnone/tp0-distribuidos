@@ -1,10 +1,6 @@
-import struct
-
-
 def consume_socket_data(client_sock):
     msg_type = client_sock.recv(1)
     raw_len = client_sock.recv(2) #TODO poner una constante
-    # print(f"leo raw len {raw_len}")
     if not raw_len:
         return -1, -1
     msg_len = (raw_len[0] << 8) | raw_len[1]
@@ -32,5 +28,4 @@ def send_client_winners(client_sock, winners):
     buf[0] = 3
     buf[1:3] = len_bytes
     buf[3:] = payload_bytes
-    print("Socket válido?", client_sock.fileno())
     client_sock.sendall(buf)

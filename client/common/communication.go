@@ -2,7 +2,6 @@ package common
 
 import (
 	"bytes"
-	"encoding/binary"
 	"encoding/csv"
 	"fmt"
 	"io"
@@ -12,10 +11,10 @@ import (
 	"time"
 )
 
-type BetMessage struct {
-	data []byte
-	len  uint32
-}
+// type BetMessage struct {
+// 	data []byte
+// 	len  uint32
+// }
 
 type BetResponse struct {
 	DNI string
@@ -26,30 +25,30 @@ func (b Bet) SerializeBet() []byte {
 	return []byte(fmt.Sprintf("%s;%s;%s;%s;%s;%s", b.AgenciaID, b.Nombre, b.Apellido, b.DNI, b.Nacimiento, b.Numero))
 }
 
-func uploadBet(connection net.Conn, bet Bet) {
-	data := bet.SerializeBet()
-	msg := BetMessage{
-		data: data,
-		len:  uint32(len(data)),
-	}
-	// TODO: cambiar la lógica para recibir un BetMessage en vez de un Bet
+// func uploadBet(connection net.Conn, bet Bet) {
+// 	data := bet.SerializeBet()
+// 	msg := BetMessage{
+// 		data: data,
+// 		len:  uint32(len(data)),
+// 	}
+// 	// TODO: cambiar la lógica para recibir un BetMessage en vez de un Bet
 
-	msg_buf := new(bytes.Buffer)
-	binary.Write(msg_buf, binary.BigEndian, msg.len)
-	msg_buf.Write(msg.data)
+// 	msg_buf := new(bytes.Buffer)
+// 	binary.Write(msg_buf, binary.BigEndian, msg.len)
+// 	msg_buf.Write(msg.data)
 
-	full_msg := msg_buf.Bytes()
-	total_sent := 0
+// 	full_msg := msg_buf.Bytes()
+// 	total_sent := 0
 
-	for total_sent < len(full_msg) {
-		n, err := connection.Write(full_msg[total_sent:])
-		if err != nil {
-			fmt.Println("[ERROR] Error enviando bet al servidor:", err)
-			return
-		}
-		total_sent += n
-	}
-}
+// 	for total_sent < len(full_msg) {
+// 		n, err := connection.Write(full_msg[total_sent:])
+// 		if err != nil {
+// 			// fmt.Println("[ERROR] Error enviando bet al servidor:", err)
+// 			return
+// 		}
+// 		total_sent += n
+// 	}
+// }
 
 func serializeBetBatch(bets []Bet) (uint16, []byte, error) {
 	var buf bytes.Buffer
@@ -102,7 +101,7 @@ func sendBytesToConnection(connection net.Conn, bytes []byte) int {
 		// fmt.Printf("[DEBUG] Enviando: %q\n", string(bytes[totalSent:]))
 		n, err := connection.Write(bytes[totalSent:])
 		if err != nil {
-			fmt.Println("[ERROR] Error enviando bet al servidor:", err)
+			// fmt.Println("[ERROR] Error enviando bet al servidor:", err)
 			return 0
 		}
 		totalSent += n
@@ -145,7 +144,6 @@ func sendWinnersRequest(connection net.Conn) {
 func receiveWinners(connection net.Conn) (int, error) {
 	time.Sleep(5 * time.Second)
 	header := make([]byte, 3) // 1 byte tipo + 2 bytes length
-	log.Infof("Leyendo header")
 
 	_, err := io.ReadFull(connection, header)
 	if err != nil {
@@ -159,22 +157,13 @@ func receiveWinners(connection net.Conn) (int, error) {
 
 	msgLen := int(header[1])<<8 | int(header[2])
 
-	// 2️⃣ Leer payload completo
 	msg := make([]byte, msgLen)
 	_, err = io.ReadFull(connection, msg)
 	if err != nil {
 		return 0, fmt.Errorf("error leyendo payload: %w", err)
 	}
-
-	log.Infof("Leí payload %v", msg)
-
-	// 3️⃣ Parsear winners
 	payloadStr := string(msg)
-	log.Infof("Leí payload %v", payloadStr)
 	winnerStrs := strings.Split(payloadStr, ",")
-	log.Infof("Leí payload %v", winnerStrs)
-
-	log.Infof("parsie payload")
 
 	return len(winnerStrs), nil
 }

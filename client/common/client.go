@@ -71,7 +71,6 @@ func (c *Client) StartClientLoop(sigChan chan os.Signal) {
 			sendFin(c.conn)
 			time.Sleep(2 * time.Second)
 			sendWinnersRequest(c.conn)
-			log.Infof("WINNERS?")
 			// for i := 0; i < uploaded_bets_amount; i++ {
 			response, _ := receiveWinners(c.conn)
 			// if err != nil {
@@ -82,7 +81,7 @@ func (c *Client) StartClientLoop(sigChan chan os.Signal) {
 			// 	return
 			// }
 
-			log.Infof("WINNERS! %v", response)
+			log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v", response)
 		}
 		c.conn.Close()
 		// }

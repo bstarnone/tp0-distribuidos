@@ -44,7 +44,7 @@ Simplemente se agrega un nuevo header de 1 byte para el tipo siendo, en decimal:
 Se actualizó el programa para que el servidor reciba todas las apuestas, espere a que cada cliente le envíe el pedido de ganadores y ahí los envía analizando el archivo y enviando solamente a los que corresponde. Cada cliente envía la solicitud de ganadores y se queda esperando por una respuesta hasta que el servidor la envía.
 
 ## Ejercicio 8
-Para la concurrencia se optó por el uso de *multithreading*. La justificación se resume en que, según la documentación oficial, el uso de GIL para la exclusión mutua sobre recursos no aprovecha los sistemas multiprocesador. Igualmente la tarea solicitada es intensiva en operaciones I/O, escritura y lectura de archivos. Es por esto que el uso de GIL no significa un cuello de botella para la aplicación.
+Para la concurrencia se optó por el uso de *multithreading*. Se utiliza debido a que es una librería con conceptos familiares sobre concurrencia, provee la creación de threads para paralelizar y el uso de barreras para la sincronización. Además, leyendo acerca de GIL y la manera que tiene Python de manejar el paralelismo, se observa que no se aprovechan las capacidades multiprocesador de la computadora. Igualmente, el trabajo práctico no es de naturaleza *CPU-Intensive*, sino que es *I/O intensive* tanto por la comunicación entre procesos como por la escritura y lectura de archivos. En conclusión, el no aprovechar todo el CPU no es algo que impacte en lo central del problema a resolver y sí se aprovechas las herramientas y la familiaridad de la biblioteca para implementar el paralelismo solicitado.
 
 # TP0: Docker + Comunicaciones + Concurrencia
 

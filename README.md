@@ -1,3 +1,86 @@
+# Comentarios sobre la resolución
+## Ejercicio 1
+Para este ejercicio se realizó un script `generar_compose.sh` únicamente con bash ya que se considera que es suficiente para lo solicitado.
+El script toma como variables de entrada el nombre del archivo de salida y la cantidad de clientes a generar.
+Internamente abre el archivo, escribe la parte del servidor, realiza un loop generando la parte para los clientes en función de cuántos clientes hayan y finalmente escribe la parte de la red. El modelo utilizado fue el `docker-compose-dev.yaml` provisto en el repositorio base.
+Este script fue evolucionando entre los ejercicios, así que pueden existir diferencias entre las distintas ramas.
+
+Puede invocarse mediante: `bash generar_compose.sh <output_file_name> <#clients>`
+
+Ejemplo: `bash generar_compose.sh docker_compose_dev.yml 5`
+
+## Ejercicio 2
+Este ejercicio pide que se pueda configurar de manera dinámica y externa a los containers su configuración (es decir, `config.ini` para el server y `config.yaml` para los clientes). Esto se logra usando *docker volumes* y agregandolos al compose del ejercicio anterior.
+Analizando los dockerfiles de cada aplicación, se determinó que los archivos viven en el root del contenedor, dado que allí se copian inicialmente.
+Entonces se agregan al compose modificando el script:
+- Para el cliente:
+```
+volumes:
+  - ./client/config.yaml:/config.yaml
+```
+
+- Para el servidor:
+```
+volumes:
+  - ./server/config.ini:/config.ini
+```
+
+## Ejercicio 3
+Este ejercicio pide constatar si el servidor está levantado utilizando `netcat`, con la particularidad que el comando no debe correrse desde el host que lo ejecuta.
+Por esta limitación, el script lo corre usando una imagen docker:
+```
+docker run --rm --network=tp0_testing_net alpine /bin/sh -c 'echo "mensaje" | nc server 12345'
+```
+El comando en cuestión levanta una imagen de `alpine`, que se verificó previamente que venga con `netcat` listo para su uso.
+Se lo corre conectandolo a la red interna de docker que se crea en el script `generar_compose.sh` y se le pasa el comando que utiliza `netcat` para que pueda ejecutar la verificación.
+El script luego captura la respuesta y verifica si el mensaje coincide con lo enviado, imprimiendo el mensaje correspondiente.
+
+## Ejercicio 4
+Este ejercicio pide implementar un *graceful shutdown* cuando las aplicaciones reciben la señal SIGTERM.
+La flag `-t`, utilizada en el make file para matar los contenedores, indica cuánto tiempo (en segundos) se le da a los contenedores para cerrarse desde que se envía SIGTERM. Pasado ese tiempo, envía SIGKILL.
+Para implementar el manejo de señales, en el servidor se utilizó el módulo `signal`:
+```python
+    signal.signal(signal.SIGTERM, server.sigterm_handler)
+```
+Esta función recibe la señal que debe manejar y la función para manejarla. La función se define dentro de `server.py` como:
+```python
+    def sigterm_handler(self, signum=None, frame=None):
+        self.free_resources()
+        logging.info(f'action: shutdown | result: success')
+        sys.exit(0)
+
+    def free_resources(self):
+        logging.info(f'action: close server socket | in_progress')
+        self._server_socket.close()
+        logging.info(f'action: close server socket | success')
+        logging.info(f'action: close clients sockets | in_progress')
+
+        for client_socket in self.client_sockets:
+            client_socket.close()
+        logging.info(f'action: close clients sockets | success')
+
+```
+Y se encarga de asegurarse que todos los sockets abiertos para la comunicación se cierren a fin de evitar que queden *file descriptors* sueltos.
+
+Para el cliente la cuestión es análoga pero utilizando *channels* de Go.
+```go
+  sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGTERM)
+```
+En este caso, esta implementación no provee de un handler, sino que se revisa dentro del loop del cliente.
+```go
+func (c *Client) StartClientLoop(sigChan chan os.Signal) {
+	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
+		select {
+		case <-sigChan:
+			c.conn.Close()
+			log.Infof("action: shutdown | result: success")
+			return
+		default:
+    ///...
+```
+Y si la señal se dispara, la conexión con el servidor se cierra.
+
 # TP0: Docker + Comunicaciones + Concurrencia
 
 En el presente repositorio se provee un esqueleto básico de cliente/servidor, en donde todas las dependencias del mismo se encuentran encapsuladas en containers. Los alumnos deberán resolver una guía de ejercicios incrementales, teniendo en cuenta las condiciones de entrega descritas al final de este enunciado.
@@ -19,7 +102,7 @@ Los targets disponibles son:
 
 ### Servidor
 
-Se trata de un "echo server", en donde los mensajes recibidos por el cliente se responden inmediatamente y sin alterar. 
+Se trata de un "echo server", en donde los mensajes recibidos por el cliente se responden inmediatamente y sin alterar.
 
 Se ejecutan en bucle las siguientes etapas:
 
@@ -31,7 +114,7 @@ Se ejecutan en bucle las siguientes etapas:
 
 ### Cliente
  se conecta reiteradas veces al servidor y envía mensajes de la siguiente forma:
- 
+
 1. Cliente se conecta al servidor.
 2. Cliente genera mensaje incremental.
 3. Cliente envía mensaje al servidor y espera mensaje de respuesta.
@@ -76,7 +159,7 @@ client1 exited with code 0
 En esta primera parte del trabajo práctico se plantean una serie de ejercicios que sirven para introducir las herramientas básicas de Docker que se utilizarán a lo largo de la materia. El entendimiento de las mismas será crucial para el desarrollo de los próximos TPs.
 
 ### Ejercicio N°1:
-Definir un script de bash `generar-compose.sh` que permita crear una definición de Docker Compose con una cantidad configurable de clientes.  El nombre de los containers deberá seguir el formato propuesto: client1, client2, client3, etc. 
+Definir un script de bash `generar-compose.sh` que permita crear una definición de Docker Compose con una cantidad configurable de clientes.  El nombre de los containers deberá seguir el formato propuesto: client1, client2, client3, etc.
 
 El script deberá ubicarse en la raíz del proyecto y recibirá por parámetro el nombre del archivo de salida y la cantidad de clientes esperados:
 
@@ -135,7 +218,7 @@ Se deberá implementar un módulo de comunicación entre el cliente y el servido
 
 
 ### Ejercicio N°6:
-Modificar los clientes para que envíen varias apuestas a la vez (modalidad conocida como procesamiento por _chunks_ o _batchs_). 
+Modificar los clientes para que envíen varias apuestas a la vez (modalidad conocida como procesamiento por _chunks_ o _batchs_).
 Los _batchs_ permiten que el cliente registre varias apuestas en una misma consulta, acortando tiempos de transmisión y procesamiento.
 
 La información de cada agencia será simulada por la ingesta de su archivo numerado correspondiente, provisto por la cátedra dentro de `.data/datasets.zip`.
@@ -143,7 +226,7 @@ Los archivos deberán ser inyectados en los containers correspondientes y persis
 
 En el servidor, si todas las apuestas del *batch* fueron procesadas correctamente, imprimir por log: `action: apuesta_recibida | result: success | cantidad: ${CANTIDAD_DE_APUESTAS}`. En caso de detectar un error con alguna de las apuestas, debe responder con un código de error a elección e imprimir: `action: apuesta_recibida | result: fail | cantidad: ${CANTIDAD_DE_APUESTAS}`.
 
-La cantidad máxima de apuestas dentro de cada _batch_ debe ser configurable desde config.yaml. Respetar la clave `batch: maxAmount`, pero modificar el valor por defecto de modo tal que los paquetes no excedan los 8kB. 
+La cantidad máxima de apuestas dentro de cada _batch_ debe ser configurable desde config.yaml. Respetar la clave `batch: maxAmount`, pero modificar el valor por defecto de modo tal que los paquetes no excedan los 8kB.
 
 Por su parte, el servidor deberá responder con éxito solamente si todas las apuestas del _batch_ fueron procesadas correctamente.
 

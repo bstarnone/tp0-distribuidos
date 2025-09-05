@@ -37,6 +37,9 @@ for response == -1 {
 ```
 Y la función `receiverWinners()` fue actualizada para reintentar o eventualmente fallar si hay un short-read. De esta manera si hay un fallo recibiendo datos desde el servidor, se vuelve a hacer el pedido.
 
+### Cliente no espera con conexión abierta
+Se hicieron cambios en el código para que el cliente tenga un sistema de reintentos si los ganadores no están disponibles. Además cada cliente cierra la conexión una vez enviado su batch y pregunta por los ganadores desde otra conexión.
+Si esta falla, reintenta con intervalos de tiempos de crecientes, consiguiendo un control sobre la espera, contemplando el caso de que un cliente tarde mucho más en enviar sus bets que otro.
 
 ## Ejercicio 1
 Para este ejercicio se realizó un script `generar_compose.sh` únicamente con bash ya que se considera que es suficiente para lo solicitado.

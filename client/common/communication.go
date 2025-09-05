@@ -81,6 +81,16 @@ func uploadBetsBatch(connection net.Conn, datasetPath string, batchSize int) int
 			log.Errorf("action: send batch | result: fail | error: %v", err)
 			return 0
 		}
+		// status, _ := receiveServerResponse(connection)
+		// attempts := 0
+		// for status != 5 && attempts < 3 { // reintentos por si falla el envio de una batch
+		// 	sendBytesToConnection(connection, fullMessage)
+		// 	status, _ = receiveServerResponse(connection)
+		// 	attempts++
+		// 	if attempts == 3 {
+		// 		return -1
+		// 	}
+		// }
 	}
 	return uploaded
 }
@@ -97,7 +107,7 @@ func sendWinnersRequest(connection net.Conn) {
 	sendBytesToConnection(connection, finMsg)
 }
 
-func receiveWinners(connection net.Conn) (int, error) {
+func receiveServerResponse(connection net.Conn) (int, error) {
 	header := make([]byte, 3) // 1 byte tipo + 2 bytes length
 	_, err := io.ReadFull(connection, header)
 
@@ -116,11 +126,13 @@ func receiveWinners(connection net.Conn) (int, error) {
 		return -1, fmt.Errorf("los resultados todavía no están listos")
 	}
 	if msgType != 3 {
-		return 0, fmt.Errorf("tipo de mensaje inesperado: %d", msgType)
+		return -1, fmt.Errorf("tipo de mensaje inesperado: %d", msgType)
 	}
 
 	msgLen := int(header[1])<<8 | int(header[2])
-
+	if msgLen == 0 {
+		return 0, nil
+	}
 	msg := make([]byte, msgLen)
 	_, err = io.ReadFull(connection, msg)
 	if err != nil {

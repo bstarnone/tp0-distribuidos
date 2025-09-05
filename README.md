@@ -35,7 +35,7 @@ for response == -1 {
     n = n * 2
 }
 ```
-Y la función `receiverWinners()` fue actualizada para reintentar o eventualmente fallar si hay un short-read.
+Y la función `receiverWinners()` fue actualizada para reintentar o eventualmente fallar si hay un short-read. De esta manera si hay un fallo recibiendo datos desde el servidor, se vuelve a hacer el pedido.
 
 
 ## Ejercicio 1

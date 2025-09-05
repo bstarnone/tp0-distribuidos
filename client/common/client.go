@@ -60,17 +60,22 @@ func (c *Client) StartClientLoop(sigChan chan os.Signal) {
 		// Create the connection the server in every loop iteration. Send an
 		c.createClientSocket()
 		batchSize, _ := strconv.ParseInt(c.config.BatchSize, 10, 32)
-		uploadBetsBatch(c.conn, "/dataset.csv", int(batchSize))
+		sent := uploadBetsBatch(c.conn, "/dataset.csv", int(batchSize))
+		if sent == -1 {
+			log.Errorf("action: envio_de_batches | result: failed | status: server not receiving data")
+			c.conn.Close()
+			return
+		}
 		sendFin(c.conn)
 		sendWinnersRequest(c.conn)
-		response, err := receiveWinners(c.conn)
+		response, err := receiveServerResponse(c.conn)
 
 		n := 1 * time.Second
 		for response == -1 {
-			log.Infof("action: consulta_ganadores | result: in progress | status: %v", err)
+			log.Infof("action: consulta_ganadores | result: in progress | status: %v %d", err, response)
 			time.Sleep(n)
-			response, _ = receiveWinners(c.conn) //reintento
-			n = n * 2                            //aumento el sleep por cada intento para no saturar el servidor (busy wait controlado)
+			response, err = receiveServerResponse(c.conn) //reintento
+			n = n * 2                                     //aumento el sleep por cada intento para no saturar el servidor (busy wait controlado)
 		}
 
 		log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v", response)

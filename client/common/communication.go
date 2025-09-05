@@ -101,8 +101,8 @@ func sendFin(connection net.Conn) {
 	sendBytesToConnection(connection, finMsg)
 }
 
-func sendWinnersRequest(connection net.Conn) {
-	winnerBytes := []byte("WINNER")
+func sendWinnersRequest(connection net.Conn, agency_id string) {
+	winnerBytes := []byte(agency_id)
 	finMsg := assembleMessage(3, winnerBytes)
 	sendBytesToConnection(connection, finMsg)
 }

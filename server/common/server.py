@@ -153,8 +153,8 @@ class Server:
 
         if len(self.winners_response_queue) == self.expected_agencies:
             self.find_every_winner(client)
-            if len(client.winners) > 0:
-                comms.send_client_winners(client.socket, client.winners)
+            # if len(client.winners) > 0:
+            comms.send_client_winners(client.socket, client.winners)
             client.socket.close()
 
     def __accept_new_connection(self):

@@ -67,8 +67,7 @@ func (c *Client) StartClientLoop(sigChan chan os.Signal) {
 			return
 		}
 		sendFin(c.conn)
-		c.conn.Close() //cierro la conexion luego de enviar el fin
-		time.Sleep(5 * time.Second)
+		c.conn.Close()         //cierro la conexion luego de enviar el fin
 		c.createClientSocket() //abro una nueva para pedir los ganadores
 		sendWinnersRequest(c.conn, c.config.ID)
 		response, err := receiveServerResponse(c.conn)

@@ -97,7 +97,6 @@ class Server:
                 for t in alive_threads_copy:
                     if not t.is_alive():
                         t.join()
-                        print("joinie uno que terminó")
                         self.threads.remove(t)
 
 
@@ -111,10 +110,8 @@ class Server:
                 utils.store_bets(bets)
             stored_bets += len(bets)
         if msg_type == 2: #fin batch
-            print("fin batch")
             client.finished = True
         if msg_type == 3: #pide ganador
-            print("pide ganador")
             client.finished = True
             client.asked_winners = True
             with self.lock: # busco los winners tomando el lock

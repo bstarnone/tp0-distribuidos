@@ -98,15 +98,23 @@ func sendWinnersRequest(connection net.Conn) {
 }
 
 func receiveWinners(connection net.Conn) (int, error) {
-	// time.Sleep(5 * time.Second)
 	header := make([]byte, 3) // 1 byte tipo + 2 bytes length
-
 	_, err := io.ReadFull(connection, header)
-	if err != nil {
-		return 0, fmt.Errorf("error leyendo header: %w", err)
+
+	attempts := 0
+	for err != nil && attempts < 3 { //reintento leer hasta 3 veces sino tiro error
+		header = make([]byte, 3) // 1 byte tipo + 2 bytes length
+		_, err = io.ReadFull(connection, header)
+		attempts++
+		if attempts == 3 {
+			return -1, fmt.Errorf("error leyendo header")
+		}
 	}
 
 	msgType := header[0]
+	if msgType == 4 {
+		return -1, fmt.Errorf("los resultados todavía no están listos")
+	}
 	if msgType != 3 {
 		return 0, fmt.Errorf("tipo de mensaje inesperado: %d", msgType)
 	}

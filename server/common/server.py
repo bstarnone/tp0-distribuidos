@@ -96,7 +96,6 @@ class Server:
                 alive_threads_copy = self.threads[:]
                 for t in alive_threads_copy:
                     if not t.is_alive():
-                        print("cerrado porque terminó")
                         t.join()
                         self.threads.remove(t)
 
@@ -133,7 +132,6 @@ class Server:
         client socket will also be closed
         """
         try:
-            print("por lo menos entro aca")
             stored_bets=0
             while True:
                 if(self.still_alive == False):

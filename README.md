@@ -1,4 +1,43 @@
 # Comentarios sobre la resolución
+## Sobre los cambios solicitados (reentrega)
+En esta sección dejo un breve detalle de las correcciones solicitadas por Máximo para el TP0.
+### Cambio en el manejo de threads
+Los threads al terminar son joineados para liberar los recursos, reparando el caso en que un cliente envíe sus apuestas y no deje esperando la conexión y todos los recursos que conlleva hasta que se define un ganador.
+Se implementó un thread que verifica, periódicamente (con un sleep para evitar un busy wait), si algún thread de los que manejan clientes terminó su ejecución.
+```python
+    t = threading.Thread( #thread para joinear los que terminen y liberar recursos
+        target=self.check_joinable_threads,
+    )
+    t.start()
+    self.cleaner_thread = t
+
+  def check_joinable_threads(self):
+      while True:
+          time.sleep(0.5)
+          with self.lock:
+              alive_threads_copy = self.threads[:]
+              for t in alive_threads_copy:
+                  if not t.is_alive():
+                      t.join()
+                      self.threads.remove(t)
+```
+
+### Evitar short-read en el cliente
+La manera original de leer respuestas del servidor en el cliente utiliza ReadAll() que devuelve un error != nil si no pudo leer la cantidad de bytes que esperaba. El detalle es que no existía un reintento de la lectura si fallaba. Ahora se agrega el reintento si la recepción de los ganadores falla.
+```go
+response, _ := receiveWinners(c.conn)
+
+n := 1 * time.Second
+for response == -1 {
+    log.Infof("action: consulta_ganadores | result: in progress | status: awaiting winners finish")
+    time.Sleep(n)
+    response, _ = receiveWinners(c.conn)
+    n = n * 2
+}
+```
+Y la función `receiverWinners()` fue actualizada para reintentar o eventualmente fallar si hay un short-read.
+
+
 ## Ejercicio 1
 Para este ejercicio se realizó un script `generar_compose.sh` únicamente con bash ya que se considera que es suficiente para lo solicitado.
 El script toma como variables de entrada el nombre del archivo de salida y la cantidad de clientes a generar.

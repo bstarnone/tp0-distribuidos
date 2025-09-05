@@ -4,6 +4,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/op/go-logging"
 )
@@ -58,13 +59,19 @@ func (c *Client) StartClientLoop(sigChan chan os.Signal) {
 	default:
 		// Create the connection the server in every loop iteration. Send an
 		c.createClientSocket()
-		// time.Sleep(5 * time.Second)
 		batchSize, _ := strconv.ParseInt(c.config.BatchSize, 10, 32)
 		uploadBetsBatch(c.conn, "/dataset.csv", int(batchSize))
 		sendFin(c.conn)
-		// time.Sleep(2 * time.Second)
 		sendWinnersRequest(c.conn)
-		response, _ := receiveWinners(c.conn)
+		response, err := receiveWinners(c.conn)
+
+		n := 1 * time.Second
+		for response == -1 {
+			log.Infof("action: consulta_ganadores | result: in progress | status: %v", err)
+			time.Sleep(n)
+			response, _ = receiveWinners(c.conn) //reintento
+			n = n * 2                            //aumento el sleep por cada intento para no saturar el servidor (busy wait controlado)
+		}
 
 		log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v", response)
 	}

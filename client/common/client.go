@@ -70,17 +70,17 @@ func (c *Client) StartClientLoop(sigChan chan os.Signal) {
 		c.conn.Close()         //cierro la conexion luego de enviar el fin
 		c.createClientSocket() //abro una nueva para pedir los ganadores
 		sendWinnersRequest(c.conn, c.config.ID)
-		response, err := receiveServerResponse(c.conn)
+		response, _ := receiveServerResponse(c.conn)
 
 		n := 1 * time.Second
 		for response == -1 {
 			c.conn.Close() //cierro la conexion al fallar
-			log.Infof("action: consulta_ganadores | result: in progress | status: %v %d", err, response)
+			// log.Infof("action: consulta_ganadores | result: in progress | status: %v %d", err, response)
 			time.Sleep(n)
 			c.createClientSocket() //abro una nueva para pedir los ganadores de nuevo y que el servidor me procese el pedido
 			sendWinnersRequest(c.conn, c.config.ID)
-			response, err = receiveServerResponse(c.conn) //reintento
-			n = n * 2                                     //aumento el sleep por cada intento para no saturar el servidor (busy wait controlado)
+			response, _ = receiveServerResponse(c.conn) //reintento
+			n = n * 2                                   //aumento el sleep por cada intento para no saturar el servidor (busy wait controlado)
 		}
 
 		log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v", response)
